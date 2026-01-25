@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "811966391838",
+    "project_id": "meditrack-c224d",
+    "storage_bucket": "meditrack-c224d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:811966391838:android:59650254f71dfdf02e300f",
+        "android_client_info": {
+          "package_name": "mediTrack.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "811966391838-6h6m2iog8ostlbbrguhmo4omui62akdq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0lKxzcVUtYQpJNGwILYllfbUikhez5Po"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "811966391838-6h6m2iog8ostlbbrguhmo4omui62akdq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
