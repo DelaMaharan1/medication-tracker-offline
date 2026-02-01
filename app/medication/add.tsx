@@ -51,18 +51,19 @@ export default function AddMedicineScreen() {
               isAddMode={isAddMode}
             />
 
-            <AdditionalSettings
-              form={form}
-              updateForm={updateForm}
-              errors={errors}
-            />
-
             <RefillReminderSection
               form={form}
               updateForm={updateForm}
               isAddMode={isAddMode}
               errors={errors}
             />
+
+            <AdditionalSettings
+              form={form}
+              updateForm={updateForm}
+              errors={errors}
+            />
+
           </View>
         </ScrollView>
 
