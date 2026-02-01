@@ -15,7 +15,7 @@ export default function ModalNotifications() {
 
         console.log(`[Voice] Announcing: ${medName}`);
         Speech.stop();
-        Speech.speak(`Time to take your ${medName}`, {
+        Speech.speak(`Time to take ${medName}`, {
             language: 'en',
             pitch: 1.0,
             rate: 1.0,
@@ -46,9 +46,11 @@ export default function ModalNotifications() {
             const data = response.notification.request.content.data;
 
             if (data?.medicationId) {
-                router.push('/(tabs)/home');
+                router.push({
+                    pathname: '/(tabs)/home',
+                    params: { action: 'open_notifications', t: Date.now() }
+                });
 
-                // Small delay to ensure speech works after app resume
                 setTimeout(() => {
                     if (data?.medicationName) {
                         announceMedication(data.medicationName as string);

@@ -9,6 +9,7 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
+    ScrollView,
     StyleSheet,
     TouchableOpacity,
     View
@@ -111,7 +112,11 @@ export function SignIn() {
             style={[styles.container, { backgroundColor: theme.background }]}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-            <View style={styles.content}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
                 <View style={styles.header}>
                     <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2D1A1A' : '#FEF2F2' }]}>
                         <MaterialCommunityIcons
@@ -251,7 +256,7 @@ export function SignIn() {
                         </TouchableOpacity>
                     </View>
                 </View>
-            </View>
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }
@@ -261,10 +266,11 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
-    content: {
-        flex: 1,
+    scrollContent: {
+        flexGrow: 1,
         paddingHorizontal: 28,
         justifyContent: 'center',
+        paddingVertical: 32, // Add some vertical padding for safe areas
     },
     header: {
         alignItems: 'center',

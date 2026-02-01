@@ -7,7 +7,7 @@ import { useTheme } from '@/context/theme-context';
 import { Medication, User } from '@/utils/ttype';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 import React from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -21,6 +21,8 @@ import RefillModal from '@/components/notification/refill-modal';
 import RefillNotificationCard from '@/components/notification/refill-notification';
 
 export default function HomeScreen({ user: propUser }: Props) {
+  const router = useRouter();
+  const params = useLocalSearchParams();
   const auth = getAuth();
   const currentUser = auth.currentUser;
   const { theme, isDark } = useTheme();
@@ -35,7 +37,7 @@ export default function HomeScreen({ user: propUser }: Props) {
     medications,
     refreshMedications,
     getCompletedDosesCount,
-    getTodayDoseCount, // Added this
+    getTodayDoseCount,
     pendingCount,
     getNotifications,
     takeMedication,
@@ -55,12 +57,25 @@ export default function HomeScreen({ user: propUser }: Props) {
     [medications, refillMedId]
   );
 
+  // Listen for notification action
+  React.useEffect(() => {
+    if (params.action === 'open_notifications') {
+      setTimeout(() => {
+        setShowNotifications(true);
+        router.setParams({ action: '', t: '' });
+      }, 100);
+    }
+  }, [params.action, params.t]);
+
   useFocusEffect(
     React.useCallback(() => {
       refreshMedications();
-      setShowNotifications(false); // Explicitly close modal on return/focus
+      // Only close if NOT triggered by notification action
+      if (params.action !== 'open_notifications') {
+        setShowNotifications(false);
+      }
       return () => { };
-    }, [])
+    }, [params.action])
   );
 
   const calculateTotalDoses = (meds: Medication[]) => {
@@ -200,7 +215,6 @@ export default function HomeScreen({ user: propUser }: Props) {
                       time={notif.time}
                       onTake={async () => {
                         await takeMedication(notif.medication.id, notif.time);
-                        // No need to add to skippedList, getNotifications will naturally exclude it once recorded
                       }}
                       onSkip={() => {
                         setSkippedList(prev => [...prev, `${notif.medication.id}-${notif.time}`]);

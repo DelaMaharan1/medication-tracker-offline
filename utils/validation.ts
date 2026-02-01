@@ -1,8 +1,12 @@
 import { FormErrors, FrequencyOption, MedicationFormData, WithFoodType } from "@/utils/ttype";
 
-export function validateMedicationForm(form: MedicationFormData, FrequencyOption: FrequencyOption[], WithFoodOption: WithFoodType[]) {
+export function validateMedicationForm(
+    form: MedicationFormData,
+    FrequencyOption: FrequencyOption[],
+    WithFoodOption: WithFoodType[],
+    userProfile?: { wakeTime: string; sleepTime: string }
+) {
     const errors: FormErrors = {};
-
     if (!form.name.trim()) {
         errors.name = 'Medication name is required';
     }
@@ -38,6 +42,36 @@ export function validateMedicationForm(form: MedicationFormData, FrequencyOption
         }
     }
 
+    // Time Validation against User Profile
+    if (userProfile && form.times && form.times.length > 0) {
+        const { wakeTime, sleepTime } = userProfile;
+        const [wakeH, wakeM] = wakeTime.split(':').map(Number);
+        const [sleepH, sleepM] = sleepTime.split(':').map(Number);
+        const wakeMins = wakeH * 60 + wakeM;
+        const sleepMins = sleepH * 60 + sleepM;
+
+        const isOvernight = sleepMins < wakeMins;
+
+        for (const time of form.times) {
+            const [h, m] = time.split(':').map(Number);
+            const tMins = h * 60 + m;
+
+            let inRange = false;
+            if (isOvernight) {
+                // Awake is [Wake, 24h) OR [0, Sleep)
+                inRange = (tMins >= wakeMins) || (tMins < sleepMins);
+            } else {
+                // Awake is [Wake, Sleep)
+                inRange = (tMins >= wakeMins) && (tMins < sleepMins);
+            }
+
+            if (!inRange) {
+                errors.times = `Time ${time} is during your sleeping hours (${userProfile.sleepTime} - ${userProfile.wakeTime}). Please adjust or change your cycle in Settings.`;
+                break;
+            }
+        }
+    }
+
     if (!form.withFood) {
         errors.withFood = 'Please specify if medication should be taken with food';
     } else if (!WithFoodOption.includes(form.withFood)) {
@@ -57,7 +91,7 @@ export function validateMedicationForm(form: MedicationFormData, FrequencyOption
 
     if (form.frequency && form.frequency !== 'custom') {
         const expectedCount = frequencyCounts[form.frequency];
-        if (form.times.length !== expectedCount) {
+        if (!errors.times && form.times.length !== expectedCount) {
             errors.times = `Frequency "${form.frequency}" requires exactly ${expectedCount} time(s)`;
         }
     }
@@ -92,7 +126,6 @@ export function validateMedicationForm(form: MedicationFormData, FrequencyOption
             errors.refillAt = 'Refill threshold must be less than current supply';
         }
     }
-
 
     return errors;
 }

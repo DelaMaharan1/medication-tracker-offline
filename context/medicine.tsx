@@ -1,4 +1,4 @@
-import { getTodayDoses, recordDose, updateMedication } from '@/utils/storage';
+import { recordDose, updateMedication } from '@/utils/storage';
 import { DoseHistory, Medication } from '@/utils/ttype';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -266,9 +266,8 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
                 return m;
             }));
 
-            // Refresh doses from storage to sync
-            const doses = await getTodayDoses();
-            setTodayDoses(doses);
+            // Refresh data from storage to ensure persistence consistency
+            await refreshMedications();
 
             return { success: true };
         } catch (error) {
@@ -373,8 +372,9 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
                     const windowStart = mealTimeMinutes + minOffset;
                     const windowEnd = mealTimeMinutes + maxOffset;
 
-                    // If current time is within the tolerance window, it's "due"
-                    if (currentTimeMinutes >= windowStart && currentTimeMinutes <= windowEnd) {
+                    // If current time is within the tolerance window or past it (overdue), it's "due"
+                    // We removed the upper bound (windowEnd) so notifications stick until taken/skipped
+                    if (currentTimeMinutes >= windowStart) {
                         notifications.push({
                             medication: med,
                             time: mealTimeStr

@@ -1,10 +1,11 @@
-import { DoseHistory, Medication } from '@/utils/ttype';
+import { DoseHistory, Medication, User } from '@/utils/ttype';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const MEDICATION_KEY = '@medication';
 export const DOSE_HISTORY_KEY = '@dose_history';
 export const GLOBAL_NOTIFICATIONS_KEY = '@global_notifications';
 export const VOICE_NOTIFICATIONS_KEY = '@voice_notifications';
+export const USER_KEY = '@user_profile';
 
 // --- User Context for Storage ---
 let currentUserId: string | null = null;
@@ -168,4 +169,12 @@ export async function getGlobalRefillReminders(): Promise<boolean> {
 
 export async function setGlobalRefillReminders(enabled: boolean): Promise<void> {
     await StorageService.setItem(GLOBAL_REFILL_REMINDERS_KEY, enabled);
+}
+
+export async function getUser(): Promise<User | null> {
+    return StorageService.getItem<User | null>(USER_KEY, null);
+}
+
+export async function saveUser(user: User): Promise<void> {
+    await StorageService.setItem(USER_KEY, user);
 }

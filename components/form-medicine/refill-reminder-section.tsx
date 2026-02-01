@@ -92,7 +92,7 @@ export default function RefillReminderSection({ form, updateForm, isAddMode, err
                 </View>
             </View>
 
-            {/* Show Reminders Enabled ONLY in Edit Mode */}
+            {/* Show Reminders Enabled */}
             {!isAddMode && (
                 <View style={[
                     styles.switchRow,
@@ -116,8 +116,8 @@ export default function RefillReminderSection({ form, updateForm, isAddMode, err
                     <Switch
                         value={localReminderEnabled}
                         onValueChange={(value) => {
-                            setLocalReminderEnabled(value); // Optimistic update
-                            updateForm({ reminderEnabled: value }); // Async update
+                            setLocalReminderEnabled(value);
+                            updateForm({ reminderEnabled: value });
                         }}
                         trackColor={{ false: '#767577', true: colorsTheme.primary }}
                         disabled={!medicineContext.globalNotifications}

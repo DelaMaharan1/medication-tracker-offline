@@ -1,7 +1,7 @@
 import { FREQUENCY_OPTION } from '@/constants/medicine/frequency-items';
 import { WITH_FOOD_OPTIONS } from '@/constants/medicine/with-food-option';
 import { useSnackbar } from '@/context/snackbar';
-import { addMedication, deletedMedication, getMedication, updateMedication } from '@/utils/storage';
+import { addMedication, deletedMedication, getMedication, getUser, updateMedication } from '@/utils/storage';
 import { FormErrors, Medication, MedicationFormData, WithFoodType, toLocalISOString } from '@/utils/ttype';
 import { isMedicationFormValid, validateMedicationForm } from '@/utils/validation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -64,9 +64,74 @@ export function useMedicationForm() {
         loadData();
     }, [params.id]);
 
-    const updateForm = useCallback((update: Partial<Medication>) => {
-        setForm(prev => ({ ...prev, ...update }));
+    const [userProfile, setUserProfile] = useState<{ wakeTime: string; sleepTime: string } | null>(null);
+
+    useEffect(() => {
+        async function loadUser() {
+            const user = await getUser();
+            if (user && user.wakeTime && user.sleepTime) {
+                setUserProfile({ wakeTime: user.wakeTime, sleepTime: user.sleepTime });
+            }
+        }
+        loadUser();
     }, []);
+
+    const generateTimes = (frequency: string, wakeTime: string, sleepTime: string) => {
+        const countMap: Record<string, number> = { once: 1, twice: 2, three: 3, four: 4 };
+        const count = countMap[frequency];
+        if (!count) return ['08:00'];
+
+        const [wakeH, wakeM] = wakeTime.split(':').map(Number);
+        const [sleepH, sleepM] = sleepTime.split(':').map(Number);
+
+        const wakeDate = new Date();
+        wakeDate.setHours(wakeH, wakeM, 0, 0);
+
+        const sleepDate = new Date();
+        sleepDate.setHours(sleepH, sleepM, 0, 0);
+
+        if (sleepDate <= wakeDate) {
+            sleepDate.setDate(sleepDate.getDate() + 1);
+        }
+
+        const totalDuration = sleepDate.getTime() - wakeDate.getTime();
+        const times = [];
+
+        if (count === 1) {
+            // For once a day, suggest 1 hour after wake up (approx breakfast)
+            const suggestion = new Date(wakeDate.getTime() + 60 * 60 * 1000);
+            // Ensure it's not past sleep time
+            if (suggestion > sleepDate) return [wakeTime];
+            times.push(suggestion);
+        } else {
+            const interval = totalDuration / (count - 1);
+            for (let i = 0; i < count; i++) {
+                const time = new Date(wakeDate.getTime() + i * interval);
+                times.push(time);
+            }
+        }
+
+        return times.map(d => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+    };
+
+    const updateForm = useCallback((update: Partial<Medication>) => {
+        setForm(prev => {
+            const next = { ...prev, ...update };
+
+            // Smart Suggestion Logic
+            if (update.frequency && update.frequency !== prev.frequency) {
+                if (userProfile && ['once', 'twice', 'three', 'four'].includes(update.frequency)) {
+                    next.times = generateTimes(update.frequency, userProfile.wakeTime, userProfile.sleepTime);
+                } else if (!userProfile) {
+                    const staticOption = FREQUENCY_OPTION.find(f => f.id === update.frequency);
+                    if (staticOption && staticOption.defaultTimes) {
+                        next.times = [...staticOption.defaultTimes];
+                    }
+                }
+            }
+            return next;
+        });
+    }, [userProfile]);
 
     const clearError = useCallback((field: string) => {
         setErrors(prev => {
@@ -76,9 +141,6 @@ export function useMedicationForm() {
         });
     }, []);
 
-
-
-    // ... existing useState ...
 
     const handleDelete = async () => {
         Alert.alert(
@@ -109,7 +171,8 @@ export function useMedicationForm() {
             const validationError = validateMedicationForm(
                 form,
                 FREQUENCY_OPTION,
-                WITH_FOOD_OPTIONS.map(opt => opt.value) as WithFoodType[]
+                WITH_FOOD_OPTIONS.map(opt => opt.value) as WithFoodType[],
+                userProfile || undefined
             );
             setErrors(validationError);
 
@@ -126,10 +189,16 @@ export function useMedicationForm() {
                 return;
             }
 
+            // Add timestamp to force Sync Engine to detect changes
+            const payload = {
+                ...(form as Medication),
+                updatedAt: new Date().toISOString()
+            };
+
             if (isAddMode) {
-                await addMedication(form as Medication);
+                await addMedication(payload);
             } else {
-                await updateMedication(form as Medication);
+                await updateMedication(payload);
             }
 
             showSnackbar(
@@ -152,7 +221,7 @@ export function useMedicationForm() {
         clearError,
         handleDelete,
         handleSubmit,
-        router // exposing router just in case, though mostly handled internally
+        router
     };
 }
 

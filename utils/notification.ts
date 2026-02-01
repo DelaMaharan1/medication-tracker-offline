@@ -107,6 +107,8 @@ export async function scheduleMedicationReminder(
                             offset: offset
                         },
                         sound: true,
+                        // @ts-ignore
+                        channelId: 'default', // Force usage of the high-importance channel
                     },
                     trigger: {
                         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -147,6 +149,8 @@ export async function scheduleRefillReminder(
                     currentSupply: medication.currentSupply
                 },
                 sound: true,
+                // @ts-ignore
+                channelId: 'default',
             },
             trigger: null, // Send immediately
         });

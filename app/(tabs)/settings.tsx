@@ -1,4 +1,5 @@
 import { AboutModal } from '@/components/settings/AboutModal';
+import { DailyCycleModal } from '@/components/settings/DailyCycleModal';
 import { FeedbackModal } from '@/components/settings/FeedbackModal';
 import { ProfileCard } from '@/components/settings/ProfileCard';
 import { SettingRow } from '@/components/settings/SettingRow';
@@ -12,6 +13,7 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { getAuth, signOut, User } from 'firebase/auth';
 import React, { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+
 export default function SettingsScreen() {
   const medicineContext = useMedication();
   const themeContext = useTheme();
@@ -19,6 +21,25 @@ export default function SettingsScreen() {
 
   const { clearAllData, globalNotifications, setGlobalNotifications } = medicineContext;
   const { theme, isDark, mode, setMode } = themeContext;
+
+  // ... (existing handlers)
+
+  const auth = getAuth();
+  const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (auth.currentUser) {
+        auth.currentUser.reload().then(() => {
+          setCurrentUser({ ...auth.currentUser } as User);
+        });
+      }
+    }, [])
+  );
+
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showDailyCycleModal, setShowDailyCycleModal] = useState(false);
 
   const handleClearData = () => {
     Alert.alert(
@@ -36,23 +57,6 @@ export default function SettingsScreen() {
     );
   };
 
-  const auth = getAuth();
-  const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
-
-  useFocusEffect(
-    useCallback(() => {
-      // Reload the user to get updated profile data
-      if (auth.currentUser) {
-        auth.currentUser.reload().then(() => {
-          setCurrentUser({ ...auth.currentUser } as User);
-        });
-      }
-    }, [])
-  );
-
-  const [showAboutModal, setShowAboutModal] = useState(false);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#151718' : '#F2F2F7' }]}>
       <Stack.Screen options={{
@@ -66,6 +70,14 @@ export default function SettingsScreen() {
         <ProfileCard name={currentUser?.displayName} email={currentUser?.email} />
 
         <SettingsGroup title="Preferences">
+          <SettingRow
+            icon="time-outline"
+            title="Daily Cycle"
+            subtitle="Set wake and sleep times"
+            type="arrow"
+            onPress={() => setShowDailyCycleModal(true)}
+          />
+          <View style={[styles.divider, { backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]} />
           <SettingRow
             icon="notifications"
             title="Push Notifications"
@@ -188,6 +200,13 @@ export default function SettingsScreen() {
         theme={theme}
         isDark={isDark}
         currentUser={currentUser}
+      />
+
+      <DailyCycleModal
+        visible={showDailyCycleModal}
+        onClose={() => setShowDailyCycleModal(false)}
+        theme={theme}
+        isDark={isDark}
       />
     </View>
   );

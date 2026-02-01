@@ -256,6 +256,24 @@ const styles = StyleSheet.create({
         fontSize: 12,
         opacity: 0.7,
     },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    timeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        justifyContent: 'center',
+    },
+    timeText: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 8,
+    },
 });
 
 
