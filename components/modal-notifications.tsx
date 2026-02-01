@@ -56,7 +56,7 @@ export default function ModalNotifications() {
                         const med = medications.find(m => m.id === data.medicationId);
                         if (med) announceMedication(med.name);
                     }
-                }, 1500);
+                }, 1000);
             }
         });
 

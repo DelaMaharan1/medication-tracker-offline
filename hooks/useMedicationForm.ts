@@ -2,7 +2,7 @@ import { FREQUENCY_OPTION } from '@/constants/medicine/frequency-items';
 import { WITH_FOOD_OPTIONS } from '@/constants/medicine/with-food-option';
 import { useSnackbar } from '@/context/snackbar';
 import { addMedication, deletedMedication, getMedication, updateMedication } from '@/utils/storage';
-import { FormErrors, Medication, WithFoodType, toLocalISOString } from '@/utils/ttype';
+import { FormErrors, Medication, MedicationFormData, WithFoodType, toLocalISOString } from '@/utils/ttype';
 import { isMedicationFormValid, validateMedicationForm } from '@/utils/validation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -15,7 +15,13 @@ export function useMedicationForm() {
     const [isAddMode, setIsAddMode] = useState<boolean>(!params.id);
     const [errors, setErrors] = useState<FormErrors>({});
 
-    const [form, setForm] = useState<Medication>({
+    type FormState = MedicationFormData & {
+        id: string;
+        createdAt: string;
+        updatedAt: string;
+    };
+
+    const [form, setForm] = useState<FormState>({
         id: (params.id as string) || Math.random().toString(36).substr(2, 9),
         name: '',
         brand: '',
@@ -34,8 +40,8 @@ export function useMedicationForm() {
         customDuration: '',
         endDate: '',
         refillReminder: false,
-        currentSupply: 0,
-        refillAt: 0,
+        currentSupply: undefined,
+        refillAt: undefined,
         reminderEnabled: true,
         notificationId: [],
         isActive: true,
@@ -121,9 +127,9 @@ export function useMedicationForm() {
             }
 
             if (isAddMode) {
-                await addMedication(form);
+                await addMedication(form as Medication);
             } else {
-                await updateMedication(form);
+                await updateMedication(form as Medication);
             }
 
             showSnackbar(

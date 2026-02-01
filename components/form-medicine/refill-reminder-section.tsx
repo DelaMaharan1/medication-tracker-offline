@@ -1,13 +1,13 @@
 import { colorsTheme } from '@/constants/theme';
 import { useMedication } from '@/context/medicine';
 import { useTheme } from '@/context/theme-context';
-import { FormErrors, Medication } from '@/utils/ttype';
+import { FormErrors, MedicationFormData } from '@/utils/ttype';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 interface Props {
-    form: Medication;
-    updateForm: (update: Partial<Medication>) => void;
+    form: MedicationFormData;
+    updateForm: (update: Partial<MedicationFormData>) => void;
     isAddMode: boolean;
     errors: FormErrors;
 }
@@ -41,7 +41,9 @@ export default function RefillReminderSection({ form, updateForm, isAddMode, err
 
             <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                    <Text style={[styles.label, { color: theme.text }]}>Current Supply</Text>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                        Current Supply <Text style={{ color: '#FF3B30' }}>*</Text>
+                    </Text>
                     <TextInput
                         style={[
                             styles.input,
@@ -55,10 +57,10 @@ export default function RefillReminderSection({ form, updateForm, isAddMode, err
                         placeholder="0"
                         placeholderTextColor={isDark ? '#444' : '#999'}
                         keyboardType="numeric"
-                        value={form.currentSupply?.toString()}
+                        value={form.currentSupply?.toString() ?? ''}
                         onChangeText={(text) => {
                             updateForm({
-                                currentSupply: parseInt(text) || 0,
+                                currentSupply: text === '' ? undefined : (parseInt(text) || 0),
                                 refillReminder: true
                             });
                         }}
@@ -80,8 +82,11 @@ export default function RefillReminderSection({ form, updateForm, isAddMode, err
                         placeholder="0"
                         placeholderTextColor={isDark ? '#444' : '#999'}
                         keyboardType="numeric"
-                        value={form.refillAt?.toString()}
-                        onChangeText={(text) => updateForm({ refillAt: parseInt(text) || 0, refillReminder: true })}
+                        value={form.refillAt?.toString() ?? ''}
+                        onChangeText={(text) => updateForm({
+                            refillAt: text === '' ? undefined : (parseInt(text) || 0),
+                            refillReminder: true
+                        })}
                     />
                     {errors.refillAt && <Text style={styles.errorText}>{errors.refillAt}</Text>}
                 </View>

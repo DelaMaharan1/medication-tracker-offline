@@ -1,11 +1,11 @@
 import { colorsTheme } from '@/constants/theme';
 import { useTheme } from '@/context/theme-context';
-import { FormErrors, Medication, WithFoodType } from '@/utils/ttype';
+import { FormErrors, MedicationFormData, WithFoodType } from '@/utils/ttype';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface Props {
-    form: Medication;
-    updateForm: (update: Partial<Medication>) => void;
+    form: MedicationFormData;
+    updateForm: (update: Partial<MedicationFormData>) => void;
     errors: FormErrors;
 }
 
@@ -16,12 +16,6 @@ export default function AdditionalSettings({ form, updateForm, errors }: Props) 
         { value: 'before', label: 'Before' },
         { value: 'with', label: 'With' },
         { value: 'after', label: 'After' },
-    ];
-
-    const offsetOptions = [
-        { value: -30, label: '-30m' },
-        { value: 0, label: '0m' },
-        { value: 30, label: '+30m' },
     ];
 
     const toleranceWindow = {
@@ -69,36 +63,7 @@ export default function AdditionalSettings({ form, updateForm, errors }: Props) 
                 ))}
             </View>
 
-            <View style={{ height: 20 }} />
 
-            <Text style={[styles.label, { color: theme.text }]}>Meal Offset</Text>
-            <View style={styles.row}>
-                {offsetOptions.map((opt) => (
-                    <TouchableOpacity
-                        key={opt.value}
-                        style={[
-                            styles.foodOption,
-                            {
-                                backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
-                                borderColor: isDark ? '#333' : '#e9ecef'
-                            },
-                            form.mealOffsetMinutes === opt.value && {
-                                backgroundColor: isDark ? '#2D1A1A' : '#E6F4FE',
-                                borderColor: colorsTheme.primary
-                            },
-                        ]}
-                        onPress={() => updateForm({ mealOffsetMinutes: opt.value })}
-                    >
-                        <Text style={[
-                            styles.foodOptionText,
-                            { color: isDark ? theme.icon : '#666' },
-                            form.mealOffsetMinutes === opt.value && { color: colorsTheme.primary, fontWeight: '600' }
-                        ]}>
-                            {opt.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
 
             {/* Simple Explanation */}
             <View style={[

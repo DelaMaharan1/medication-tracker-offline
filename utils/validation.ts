@@ -77,13 +77,13 @@ export function validateMedicationForm(form: MedicationFormData, FrequencyOption
         }
     }
 
-    if (form.refillReminder) {
-        if (form.currentSupply === undefined || form.currentSupply === null) {
-            errors.currentSupply = 'Current supply is required when refill reminder is enabled';
-        } else if (form.currentSupply < 0) {
-            errors.currentSupply = 'Current supply cannot be negative';
-        }
+    if (form.currentSupply === undefined || form.currentSupply === null) {
+        errors.currentSupply = 'Current supply is required';
+    } else if (form.currentSupply < 0) {
+        errors.currentSupply = 'Current supply cannot be negative';
+    }
 
+    if (form.refillReminder) {
         if (form.refillAt === undefined || form.refillAt === null) {
             errors.refillAt = 'Refill threshold is required when refill reminder is enabled';
         } else if (form.refillAt <= 0) {
