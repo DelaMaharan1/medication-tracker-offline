@@ -1,4 +1,5 @@
 import { colorsTheme } from '@/constants/theme'
+import { useTheme } from '@/context/theme-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useRouter } from 'expo-router'
 import React from 'react'
@@ -6,15 +7,22 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 export function MedicineEmptySection() {
     const router = useRouter();
+    const { theme, isDark } = useTheme();
 
     return (
-        <View style={styles.emptyState}>
-            <View style={styles.iconContainer}>
+        <View style={[
+            styles.emptyState,
+            {
+                backgroundColor: theme.card,
+                borderColor: isDark ? '#333' : '#f0f0f0'
+            }
+        ]}>
+            <View style={[styles.iconContainer, { backgroundColor: colorsTheme.primary + '20' }]}>
                 <Ionicons name="medical-outline" size={40} color={colorsTheme.primary} />
             </View>
 
-            <Text style={styles.emptyStateText}>You're all set for now!</Text>
-            <Text style={styles.emptyStateSubtext}>No medications scheduled for this moment.</Text>
+            <Text style={[styles.emptyStateText, { color: theme.text }]}>You're all set for now!</Text>
+            <Text style={[styles.emptyStateSubtext, { color: isDark ? theme.icon : '#8E8E93' }]}>No medications scheduled for this moment.</Text>
 
             <TouchableOpacity style={styles.addMedicationButton}
                 onPress={() => router.push('/medication/add')}
@@ -84,3 +92,5 @@ const styles = StyleSheet.create({
         fontSize: 15,
     },
 });
+
+

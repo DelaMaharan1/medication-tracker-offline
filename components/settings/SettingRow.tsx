@@ -1,7 +1,7 @@
 import { colorsTheme } from '@/constants/theme';
 import { useTheme } from '@/context/theme-context';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 interface SettingRowProps {
@@ -16,6 +16,14 @@ interface SettingRowProps {
 
 export const SettingRow = ({ icon, title, subtitle, value, onValueChange, onPress, type }: SettingRowProps) => {
     const { theme } = useTheme();
+
+    // Optimistic UI for Switch
+    const [localValue, setLocalValue] = useState(value);
+
+    // Sync from props (external source of truth) when they finally update
+    useEffect(() => {
+        setLocalValue(value);
+    }, [value]);
 
     return (
         <TouchableOpacity
@@ -39,10 +47,13 @@ export const SettingRow = ({ icon, title, subtitle, value, onValueChange, onPres
 
             {type === 'switch' && (
                 <Switch
-                    value={value}
-                    onValueChange={onValueChange}
+                    value={localValue}
+                    onValueChange={(newValue) => {
+                        setLocalValue(newValue); // Instant local update
+                        if (onValueChange) onValueChange(newValue); // Async parent update
+                    }}
                     trackColor={{ false: '#767577', true: colorsTheme.primary + '80' }}
-                    thumbColor={value ? colorsTheme.primary : '#f4f3f4'}
+                    thumbColor={localValue ? colorsTheme.primary : '#f4f3f4'}
                 />
             )}
 
@@ -89,3 +100,6 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
 });
+
+
+

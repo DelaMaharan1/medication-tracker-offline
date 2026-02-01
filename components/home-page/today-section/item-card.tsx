@@ -1,5 +1,5 @@
-// todays-section/item-card.tsx
 import { colorsTheme } from '@/constants/theme';
+import { useTheme } from '@/context/theme-context';
 import { DoseHistory, Medication } from '@/utils/ttype';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -11,10 +11,12 @@ interface ItemSectionProps {
     doseHistory: DoseHistory;
     onEdit: () => void;
     onTakeMedication: () => void;
+    showInactiveOverlay?: boolean;
 }
 
-export function ItemSection({ medicine, doseHistory, onEdit, onTakeMedication }: ItemSectionProps) {
-    // Check if the medication duration has ended
+export function ItemSection({ medicine, doseHistory, onEdit, onTakeMedication, showInactiveOverlay }: ItemSectionProps) {
+    const { theme, isDark } = useTheme();
+
     // endDate is YYYY-MM-DD. If today > endDate, it is ended.
     const isEnded = React.useMemo(() => {
         if (!medicine.endDate) return false;
@@ -40,26 +42,45 @@ export function ItemSection({ medicine, doseHistory, onEdit, onTakeMedication }:
     return (
         <View style={[styles.cardContainer, isEnded && { opacity: 0.6 }]}>
             <TouchableOpacity
-                style={styles.card}
+                style={[
+                    styles.card,
+                    {
+                        backgroundColor: theme.card,
+                        borderColor: isDark ? '#333' : '#f0f0f0'
+                    }
+                ]}
                 onPress={handlePress}
                 activeOpacity={0.7}
             >
+                {showInactiveOverlay && <View style={styles.overlay} />}
+
                 <View style={styles.cardContent}>
 
                     {/* Left Side: Icon & Info */}
                     <View style={styles.mainInfo}>
-                        <View style={[styles.iconContainer, isEnded && { backgroundColor: '#F2F2F7' }]}>
+                        <View style={[
+                            styles.iconContainer,
+                            { backgroundColor: isDark ? '#2D1A1A' : '#FFF0F0' },
+                            isEnded && { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' }
+                        ]}>
                             <Ionicons
                                 name="medkit"
                                 size={24}
-                                color={isEnded ? '#8E8E93' : colorsTheme.primary}
+                                color={isEnded ? (isDark ? '#636366' : '#8E8E93') : colorsTheme.primary}
                             />
                         </View>
                         <View style={styles.textContainer}>
-                            <Text style={[styles.medName, isEnded && { color: '#8E8E93' }]} numberOfLines={1}>
+                            <Text
+                                style={[
+                                    styles.medName,
+                                    { color: theme.text },
+                                    isEnded && { color: isDark ? '#636366' : '#8E8E93' }
+                                ]}
+                                numberOfLines={1}
+                            >
                                 {medicine.name}
                             </Text>
-                            <Text style={styles.dosage}>
+                            <Text style={[styles.dosage, { color: isDark ? theme.icon : '#8E8E93' }]}>
                                 {medicine.dosage} {medicine.dosageUnit} • {medicine.times?.length}x Daily
                                 {isEnded && ' (Ended)'}
                             </Text>
@@ -93,8 +114,8 @@ export function ItemSection({ medicine, doseHistory, onEdit, onTakeMedication }:
 
 const styles = StyleSheet.create({
     cardContainer: {
-        marginBottom: 12,
         // This container ensures consistent spacing
+        // marginBottom removed to let parent handle spacing
     },
     card: {
         backgroundColor: '#fff',
@@ -106,13 +127,19 @@ const styles = StyleSheet.create({
         elevation: 2,
         borderWidth: 1,
         borderColor: '#f0f0f0',
-        // Remove margin from here
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)', // Thin overlay as requested
+        zIndex: 10,
+        pointerEvents: 'none' // Allow touches to pass through if needed, or remove if blocking is desired
     },
     cardContent: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 16, // Consistent padding
+        padding: 16,
     },
     mainInfo: {
         flexDirection: 'row',

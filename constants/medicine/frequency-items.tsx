@@ -55,3 +55,5 @@ export const getDefaultTimesByFrequency = (frequencyId: string): string[] => {
   const frequency = getFrequencyById(frequencyId);
   return frequency?.defaultTimes || ['08:00'];
 };
+
+

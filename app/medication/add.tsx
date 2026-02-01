@@ -5,18 +5,20 @@ import { HeaderSection } from '@/components/form-medicine/header';
 import RefillReminderSection from '@/components/form-medicine/refill-reminder-section';
 import ScheduleSection from '@/components/form-medicine/schedule-section';
 import { colorsTheme } from '@/constants/theme';
+import { useTheme } from '@/context/theme-context';
 import { useMedicationForm } from '@/hooks/useMedicationForm';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function AddMedicineScreen() {
+  const { theme, isDark } = useTheme();
   const { form, errors, isAddMode, updateForm, clearError, handleDelete, handleSubmit, router } = useMedicationForm();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <LinearGradient
-        colors={[colorsTheme.primary, colorsTheme.secondary]}
+        colors={[colorsTheme.primary, isDark ? '#822F2F' : colorsTheme.secondary]}
         style={styles.headerGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
@@ -109,3 +111,5 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 });
+
+

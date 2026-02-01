@@ -1,3 +1,4 @@
+import { useTheme } from '@/context/theme-context';
 import { DosageUnit, FormErrors, MedicationFormData, MedicationType } from '@/utils/ttype';
 import { Picker } from '@react-native-picker/picker';
 import React from 'react';
@@ -25,22 +26,32 @@ export default function BasicInformation({
   updateForm,
   clearErrors,
 }: Props) {
+  const { theme, isDark } = useTheme();
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} scrollEnabled={false}>
-      <View style={styles.formSection}>
+      <View style={[styles.formSection, { backgroundColor: theme.card }]}>
 
         {/* A. Basic Information */}
-        <Text style={styles.sectionHeader}>Basic Information</Text>
+        <Text style={[styles.sectionHeader, { color: theme.text }]}>Basic Information</Text>
 
         {/* Medicine Name */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>
+          <Text style={[styles.label, { color: theme.text }]}>
             Medicine Name <Text style={styles.required}>*</Text>
           </Text>
           <TextInput
-            style={[styles.input, errors.name && styles.inputError]}
+            style={[
+              styles.input,
+              {
+                backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                borderColor: isDark ? '#333' : '#e9ecef',
+                color: theme.text
+              },
+              errors.name && styles.inputError
+            ]}
             placeholder="Enter medication name"
-            placeholderTextColor={'#999'}
+            placeholderTextColor={isDark ? '#636366' : '#999'}
             value={medicationForm.name}
             onChangeText={(text) => {
               updateForm({ name: text });
@@ -52,30 +63,45 @@ export default function BasicInformation({
 
         {/* Brand (Optional) */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Brand (Optional)</Text>
+          <Text style={[styles.label, { color: theme.text }]}>Brand (Optional)</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                borderColor: isDark ? '#333' : '#e9ecef',
+                color: theme.text
+              }
+            ]}
             placeholder="Enter brand name"
-            placeholderTextColor={'#999'}
+            placeholderTextColor={isDark ? '#636366' : '#999'}
             value={medicationForm.brand}
             onChangeText={(text) => updateForm({ brand: text })}
           />
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: isDark ? '#333' : '#F0F0F0' }]} />
 
         {/* B. Medication Details */}
-        <Text style={styles.sectionHeader}>Medication Details</Text>
+        <Text style={[styles.sectionHeader, { color: theme.text }]}>Medication Details</Text>
 
         {/* Medication Type */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>
+          <Text style={[styles.label, { color: theme.text }]}>
             Medication Type <Text style={styles.required}>*</Text>
           </Text>
-          <View style={[styles.pickerContainer, errors.type && styles.inputError]}>
+          <View style={[
+            styles.pickerContainer,
+            {
+              backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+              borderColor: isDark ? '#333' : '#e9ecef'
+            },
+            errors.type && styles.inputError
+          ]}>
             <Picker
               selectedValue={medicationForm.type}
-              style={styles.picker}
+              style={[styles.picker, { color: theme.text }]}
+              dropdownIconColor={isDark ? theme.text : '#333'}
               onValueChange={(itemValue) => {
                 updateForm({ type: itemValue });
                 clearErrors('type');
@@ -86,15 +112,24 @@ export default function BasicInformation({
                   key={type}
                   label={type.charAt(0).toUpperCase() + type.slice(1)}
                   value={type}
+                  color={isDark ? '#666' : '#333'}
                 />
               ))}
             </Picker>
           </View>
           {medicationForm.type === 'others' && (
             <TextInput
-              style={[styles.input, { marginTop: 10 }]}
+              style={[
+                styles.input,
+                {
+                  marginTop: 10,
+                  backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                  borderColor: isDark ? '#333' : '#e9ecef',
+                  color: theme.text
+                }
+              ]}
               placeholder="Specify medication type"
-              placeholderTextColor={'#999'}
+              placeholderTextColor={isDark ? '#636366' : '#999'}
               value={medicationForm.othersType}
               onChangeText={(text) => updateForm({ othersType: text })}
             />
@@ -105,13 +140,21 @@ export default function BasicInformation({
         {/* Dosage Section (Side by Side) */}
         <View style={styles.row}>
           <View style={[styles.inputGroup, { flex: 4 }]}>
-            <Text style={styles.label}>
+            <Text style={[styles.label, { color: theme.text }]}>
               Dosage <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
-              style={[styles.input, errors.dosage && styles.inputError]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                  borderColor: isDark ? '#333' : '#e9ecef',
+                  color: theme.text
+                },
+                errors.dosage && styles.inputError
+              ]}
               placeholder="e.g., 500"
-              placeholderTextColor={'#999'}
+              placeholderTextColor={isDark ? '#636366' : '#999'}
               value={medicationForm.dosage}
               onChangeText={(text) => {
                 updateForm({ dosage: text });
@@ -123,13 +166,21 @@ export default function BasicInformation({
           </View>
 
           <View style={[styles.inputGroup, { flex: 3, marginLeft: 12 }]}>
-            <Text style={styles.label}>
+            <Text style={[styles.label, { color: theme.text }]}>
               Unit <Text style={styles.required}>*</Text>
             </Text>
-            <View style={[styles.pickerContainer, errors.dosageUnit && styles.inputError]}>
+            <View style={[
+              styles.pickerContainer,
+              {
+                backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                borderColor: isDark ? '#333' : '#e9ecef'
+              },
+              errors.dosageUnit && styles.inputError
+            ]}>
               <Picker
                 selectedValue={medicationForm.dosageUnit}
-                style={styles.picker}
+                style={[styles.picker, { color: theme.text }]}
+                dropdownIconColor={isDark ? theme.text : '#333'}
                 onValueChange={(itemValue) => {
                   updateForm({ dosageUnit: itemValue });
                   clearErrors('dosageUnit');
@@ -140,6 +191,7 @@ export default function BasicInformation({
                     key={unit}
                     label={unit}
                     value={unit}
+                    color={isDark ? '#666' : '#333'}
                   />
                 ))}
               </Picker>
@@ -238,3 +290,5 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
 });
+
+

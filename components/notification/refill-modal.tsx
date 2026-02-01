@@ -1,4 +1,5 @@
 import { colorsTheme } from '@/constants/theme';
+import { useTheme } from '@/context/theme-context'; // Use the context
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -21,6 +22,7 @@ export default function RefillModal({
     currentSupply
 }: RefillModalProps) {
     const [amount, setAmount] = useState(currentSupply.toString());
+    const { theme, isDark } = useTheme(); // Get dark mode from context
 
     return (
         <Modal
@@ -33,36 +35,40 @@ export default function RefillModal({
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={styles.overlay}
             >
-                <View style={styles.container}>
+                <View style={[styles.container, { backgroundColor: isDark ? '#1C1C1E' : '#fff' }]}>
                     <View style={styles.header}>
-                        <Text style={styles.title}>Update Stock</Text>
+                        <Text style={[styles.title, { color: isDark ? '#fff' : '#1C1C1E' }]}>Update Stock</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                            <Ionicons name="close" size={24} color="#333" />
+                            <Ionicons name="close" size={24} color={isDark ? '#fff' : '#1C1C1E'} />
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.infoBox}>
+                    <View style={[styles.infoBox, { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }]}>
                         <View style={styles.infoRow}>
-                            <Text style={styles.label}>Medication</Text>
-                            <Text style={styles.value}>{medicationName}</Text>
+                            <Text style={[styles.label, { color: isDark ? '#8E8E93' : '#8E8E93' }]}>Medication</Text>
+                            <Text style={[styles.value, { color: isDark ? '#fff' : '#1C1C1E' }]}>{medicationName}</Text>
                         </View>
                         <View style={styles.infoRow}>
-                            <Text style={styles.label}>Dosage</Text>
-                            <Text style={styles.value}>{dosage}</Text>
+                            <Text style={[styles.label, { color: isDark ? '#8E8E93' : '#8E8E93' }]}>Dosage</Text>
+                            <Text style={[styles.value, { color: isDark ? '#fff' : '#1C1C1E' }]}>{dosage}</Text>
                         </View>
                     </View>
 
-                    <Text style={styles.inputLabel}>New Supply Amount</Text>
-                    <View style={styles.inputContainer}>
+                    <Text style={[styles.inputLabel, { color: isDark ? '#fff' : '#1C1C1E' }]}>New Supply Amount</Text>
+                    <View style={[styles.inputContainer, {
+                        backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+                        borderColor: colorsTheme.primary
+                    }]}>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { color: isDark ? '#fff' : '#1C1C1E' }]}
                             value={amount}
                             onChangeText={setAmount}
                             keyboardType="numeric"
                             placeholder="0"
+                            placeholderTextColor={isDark ? '#8E8E93' : '#C7C7CC'}
                             autoFocus
                         />
-                        <Text style={styles.unitText}>units</Text>
+                        <Text style={[styles.unitText, { color: isDark ? '#8E8E93' : '#8E8E93' }]}>units</Text>
                     </View>
 
                     <TouchableOpacity
@@ -83,12 +89,11 @@ export default function RefillModal({
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(239, 234, 234, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Darker overlay for better contrast
         justifyContent: 'center',
         padding: 24,
     },
     container: {
-        backgroundColor: '#fff',
         borderRadius: 24,
         padding: 24,
         shadowColor: "#000",
@@ -106,13 +111,11 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: '800',
-        color: '#1C1C1E',
     },
     closeBtn: {
         padding: 4,
     },
     infoBox: {
-        backgroundColor: '#F2F2F7',
         borderRadius: 16,
         padding: 16,
         marginBottom: 20,
@@ -124,25 +127,21 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 14,
-        color: '#8E8E93',
         fontWeight: '500',
     },
     value: {
         fontSize: 14,
-        color: '#1C1C1E',
         fontWeight: '700',
     },
     inputLabel: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#1C1C1E',
         marginBottom: 10,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1.5,
-        borderColor: colorsTheme.primary,
         borderRadius: 12,
         paddingHorizontal: 16,
         height: 54,
@@ -152,11 +151,9 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 18,
         fontWeight: '700',
-        color: '#1C1C1E',
     },
     unitText: {
         fontSize: 16,
-        color: '#8E8E93',
         fontWeight: '600',
     },
     submitBtn: {

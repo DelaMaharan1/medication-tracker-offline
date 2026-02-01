@@ -1,4 +1,5 @@
 import { colorsTheme } from '@/constants/theme';
+import { useTheme } from '@/context/theme-context';
 import { auth } from '@/utils/firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import {
 import { Button, Text, TextInput } from 'react-native-paper';
 
 export function SignIn() {
+    const { theme, isDark } = useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -106,22 +108,22 @@ export function SignIn() {
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={[styles.container, { backgroundColor: theme.background }]}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <View style={styles.content}>
                 <View style={styles.header}>
-                    <View style={styles.iconContainer}>
+                    <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2D1A1A' : '#FEF2F2' }]}>
                         <MaterialCommunityIcons
                             name="medical-bag"
                             size={48}
                             color={colorsTheme.primary}
                         />
                     </View>
-                    <Text variant="headlineMedium" style={styles.title}>
+                    <Text variant="headlineMedium" style={[styles.title, { color: theme.text }]}>
                         Welcome Back
                     </Text>
-                    <Text variant="bodyMedium" style={styles.subtitle}>
+                    <Text variant="bodyMedium" style={[styles.subtitle, { color: isDark ? theme.icon : '#6B7280' }]}>
                         Sign in to continue tracking your health
                     </Text>
                 </View>
@@ -135,10 +137,11 @@ export function SignIn() {
                         autoCapitalize="none"
                         autoCorrect={false}
                         mode="outlined"
-                        style={styles.input}
-                        outlineColor="#E5E7EB"
+                        style={[styles.input, { backgroundColor: isDark ? theme.card : '#FFFFFF' }]}
+                        outlineColor={isDark ? '#333' : '#E5E7EB'}
+                        textColor={theme.text}
                         activeOutlineColor={colorsTheme.primary}
-                        left={<TextInput.Icon icon="account-outline" color="#9CA3AF" />}
+                        left={<TextInput.Icon icon="account-outline" color={isDark ? theme.icon : "#9CA3AF"} />}
                     />
 
                     <TextInput
@@ -148,14 +151,15 @@ export function SignIn() {
                         secureTextEntry={!showPassword}
                         autoCorrect={false}
                         mode="outlined"
-                        style={styles.input}
-                        outlineColor="#E5E7EB"
+                        style={[styles.input, { backgroundColor: isDark ? theme.card : '#FFFFFF' }]}
+                        outlineColor={isDark ? '#333' : '#E5E7EB'}
+                        textColor={theme.text}
                         activeOutlineColor={colorsTheme.primary}
-                        left={<TextInput.Icon icon="lock-outline" color="#9CA3AF" />}
+                        left={<TextInput.Icon icon="lock-outline" color={isDark ? theme.icon : "#9CA3AF"} />}
                         right={
                             <TextInput.Icon
                                 icon={showPassword ? "eye-off-outline" : "eye-outline"}
-                                color="#9CA3AF"
+                                color={isDark ? theme.icon : "#9CA3AF"}
                                 onPress={() => setShowPassword(!showPassword)}
                             />
                         }
@@ -163,8 +167,14 @@ export function SignIn() {
 
                     {/* Password requirements indicator (sama seperti di SignUp) */}
                     {password.length > 0 && (
-                        <View style={styles.passwordRequirements}>
-                            <Text style={styles.requirementsTitle}>Password must contain:</Text>
+                        <View style={[
+                            styles.passwordRequirements,
+                            {
+                                backgroundColor: isDark ? '#1C1C1E' : '#F9FAFB',
+                                borderColor: isDark ? '#333' : '#E5E7EB'
+                            }
+                        ]}>
+                            <Text style={[styles.requirementsTitle, { color: theme.text }]}>Password must contain:</Text>
                             {[
                                 {
                                     label: 'At least 8 characters',
@@ -191,12 +201,12 @@ export function SignIn() {
                                     <MaterialCommunityIcons
                                         name={req.isValid ? "check-circle" : "circle-outline"}
                                         size={16}
-                                        color={req.isValid ? "#10B981" : "#9CA3AF"}
+                                        color={req.isValid ? "#10B981" : (isDark ? "#636366" : "#9CA3AF")}
                                         style={styles.requirementIcon}
                                     />
                                     <Text style={[
                                         styles.requirementText,
-                                        { color: req.isValid ? "#10B981" : "#6B7280" }
+                                        { color: req.isValid ? "#10B981" : (isDark ? theme.icon : "#6B7280") }
                                     ]}>
                                         {req.label}
                                     </Text>
@@ -228,7 +238,7 @@ export function SignIn() {
 
 
                     <View style={styles.footer}>
-                        <Text variant="bodyMedium" style={styles.footerText}>
+                        <Text variant="bodyMedium" style={[styles.footerText, { color: isDark ? theme.icon : '#6B7280' }]}>
                             Don't have an account?{' '}
                         </Text>
                         <TouchableOpacity onPress={() => router.push('/sign-up')}>
@@ -339,3 +349,5 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
 });
+
+

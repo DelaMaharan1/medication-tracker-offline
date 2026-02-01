@@ -1,5 +1,7 @@
 import { colorsTheme } from "@/constants/theme";
 import { useTheme } from "@/context/theme-context";
+import { getDoseHistory, getMedication } from "@/utils/storage";
+import { DoseHistory, Medication } from "@/utils/ttype";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
@@ -10,8 +12,6 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
-import { getDoseHistory, getMedication, recordDose } from "../../utils/storage";
-import { DoseHistory, Medication } from "../../utils/ttype";
 import { HistoryItem } from "./history-item";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -90,8 +90,8 @@ export function CalendarView() {
                 >
                     <Text style={[
                         styles.dayText,
+                        isToday && styles.todayText,
                         { color: isSelected ? 'white' : (isToday ? colorsTheme.primary : theme.text) },
-                        isToday && styles.todayText
                     ]}>
                         {day}
                     </Text>
@@ -126,7 +126,11 @@ export function CalendarView() {
             const startStr = med.startDate;
             const endStr = med.endDate;
 
-            const selDateStr = selectedDate.toISOString().split('T')[0];
+            // Use local date string (YYYY-MM-DD) for comparison
+            const selYear = selectedDate.getFullYear();
+            const selMonth = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const selDay = String(selectedDate.getDate()).padStart(2, '0');
+            const selDateStr = `${selYear}-${selMonth}-${selDay}`;
 
             const isAfterStart = selDateStr >= startStr;
             const isBeforeEnd = !endStr || selDateStr <= endStr;
@@ -178,15 +182,7 @@ export function CalendarView() {
             return (
                 <TouchableOpacity
                     key={medication.id}
-                    disabled={!isInteractive}
-                    onPress={async () => {
-                        if (isInteractive) {
-                            const recordDate = new Date(selectedDate);
-                            recordDate.setHours(h, m, 0);
-                            await recordDose(medication.id, true, recordDate.toISOString());
-                            loadData();
-                        }
-                    }}
+                    disabled={true} // Read-only view as per user request
                     style={isLocked ? { opacity: 0.6 } : {}}
                 >
                     <HistoryItem item={historyItem} />
@@ -405,3 +401,5 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
 });
+
+

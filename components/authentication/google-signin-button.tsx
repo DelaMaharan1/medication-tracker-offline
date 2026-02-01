@@ -1,4 +1,4 @@
-import { auth } from '@/utils/';
+import { auth } from '@/utils/firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { useEffect, useState } from 'react';
@@ -151,3 +151,6 @@ const styles = StyleSheet.create({
         height: 54,
     },
 });
+
+
+

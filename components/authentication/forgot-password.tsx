@@ -1,4 +1,5 @@
 import { colorsTheme } from '@/constants/theme';
+import { useTheme } from '@/context/theme-context';
 import { auth } from '@/utils/firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import {
 import { Button, Text, TextInput } from 'react-native-paper';
 
 export function ForgotPassword() {
+    const { theme, isDark } = useTheme();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -47,8 +49,8 @@ export function ForgotPassword() {
             console.log('DEBUG: sendPasswordResetEmail call successful for:', email);
             Alert.alert(
                 'Success',
-                'A password reset link has been sent to your email. Clicking the link will allow you to return to the app automatically.',
-                [{ text: 'OK', onPress: () => router.push('/(auth)/input-new-password') }]
+                'A password reset link has been sent to your email. Please check your inbox and follow the instructions to reset your password.',
+                [{ text: 'OK', onPress: () => router.push('/(auth)/sign-in') }]
             );
         } catch (error: any) {
             console.error('DEBUG: Password reset failed:', {
@@ -75,22 +77,22 @@ export function ForgotPassword() {
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={[styles.container, { backgroundColor: theme.background }]}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <View style={styles.content}>
                 <View style={styles.header}>
-                    <View style={styles.iconContainer}>
+                    <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2D1A1A' : '#FEF2F2' }]}>
                         <MaterialCommunityIcons
                             name="lock-reset"
                             size={48}
                             color={colorsTheme.primary}
                         />
                     </View>
-                    <Text variant="headlineMedium" style={styles.title}>
+                    <Text variant="headlineMedium" style={[styles.title, { color: theme.text }]}>
                         Reset Password
                     </Text>
-                    <Text variant="bodyMedium" style={styles.subtitle}>
+                    <Text variant="bodyMedium" style={[styles.subtitle, { color: isDark ? theme.icon : '#6B7280' }]}>
                         Enter your email to receive a reset link
                     </Text>
                 </View>
@@ -104,10 +106,11 @@ export function ForgotPassword() {
                         autoCapitalize="none"
                         autoCorrect={false}
                         mode="outlined"
-                        style={styles.input}
-                        outlineColor="#E5E7EB"
+                        style={[styles.input, { backgroundColor: isDark ? theme.card : '#FFFFFF' }]}
+                        outlineColor={isDark ? '#333' : '#E5E7EB'}
+                        textColor={theme.text}
                         activeOutlineColor={colorsTheme.primary}
-                        left={<TextInput.Icon icon="email-outline" color="#9CA3AF" />}
+                        left={<TextInput.Icon icon="email-outline" color={isDark ? theme.icon : "#9CA3AF"} />}
                     />
 
                     <Button
@@ -195,3 +198,6 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
 });
+
+
+

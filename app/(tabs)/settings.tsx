@@ -1,3 +1,5 @@
+import { AboutModal } from '@/components/settings/AboutModal';
+import { FeedbackModal } from '@/components/settings/FeedbackModal';
 import { ProfileCard } from '@/components/settings/ProfileCard';
 import { SettingRow } from '@/components/settings/SettingRow';
 import { SettingsFooter } from '@/components/settings/SettingsFooter';
@@ -10,7 +12,6 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { getAuth, signOut, User } from 'firebase/auth';
 import React, { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-
 export default function SettingsScreen() {
   const medicineContext = useMedication();
   const themeContext = useTheme();
@@ -49,6 +50,9 @@ export default function SettingsScreen() {
     }, [])
   );
 
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#151718' : '#F2F2F7' }]}>
       <Stack.Screen options={{
@@ -69,6 +73,15 @@ export default function SettingsScreen() {
             type="switch"
             value={globalNotifications}
             onValueChange={setGlobalNotifications}
+          />
+          <View style={[styles.divider, { backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]} />
+          <SettingRow
+            icon="beaker"
+            title="Refill Reminders"
+            subtitle="Get alerted when supply is low"
+            type="switch"
+            value={medicineContext.globalRefillReminders}
+            onValueChange={medicineContext.setGlobalRefillReminders}
           />
           <View style={[styles.divider, { backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]} />
           <SettingRow
@@ -125,8 +138,7 @@ export default function SettingsScreen() {
                       if (!currentUser) return;
                       const success = await restoreUserData(currentUser.uid);
                       if (success) {
-                        showSnackbar("Data restored. Please restart app to see changes.", "success");
-                        // Ideally trigger a context reload here if possible, but reload required for full effect
+                        showSnackbar("Data restored. Please RESTART the app to resync notifications.", "success");
                       } else {
                         showSnackbar("Restore failed or no backup found", "error");
                       }
@@ -140,18 +152,56 @@ export default function SettingsScreen() {
           <SettingRow icon="trash" title="Clear All Data" type="danger" onPress={handleClearData} />
         </SettingsGroup>
 
-        <SettingsGroup title="About">
-          <SettingRow icon="information-circle" title="Version" subtitle="1.0.0" type="arrow" onPress={() => { }} />
+        <SettingsGroup title="Support">
+          <SettingRow
+            icon="mail"
+            title="Send Feedback"
+            subtitle="Help us improve MediTrack"
+            type="arrow"
+            onPress={() => setShowFeedbackModal(true)}
+          />
+          <View style={[styles.divider, { backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]} />
+        </SettingsGroup>
+
+        <SettingsGroup title="App Version">
+          <SettingRow
+            icon="code-working"
+            title="Version"
+            subtitle="1.0.0"
+            type="arrow"
+            onPress={() => setShowAboutModal(true)}
+          />
         </SettingsGroup>
 
         <SettingsFooter onLogout={() => signOut(getAuth())} />
       </ScrollView>
+
+      <AboutModal
+        visible={showAboutModal}
+        onClose={() => setShowAboutModal(false)}
+        theme={theme}
+      />
+
+      <FeedbackModal
+        visible={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        theme={theme}
+        isDark={isDark}
+        currentUser={currentUser}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F2F2F7' },
+  container: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+    paddingTop: 20,
+  },
   scrollContent: { padding: 20, paddingBottom: 40 },
   divider: { height: 1, backgroundColor: '#F2F2F7', marginLeft: 64 },
 });
+
+
+

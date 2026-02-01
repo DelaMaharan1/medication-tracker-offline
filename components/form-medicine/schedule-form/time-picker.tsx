@@ -1,4 +1,5 @@
 import { colorsTheme } from '@/constants/theme';
+import { useTheme } from '@/context/theme-context';
 import { FormErrors, MedicationFormData } from '@/utils/ttype';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function TimePicker({ medicationForm, updateForm, errors }: Props) {
+    const { theme, isDark } = useTheme();
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
@@ -70,7 +72,7 @@ export default function TimePicker({ medicationForm, updateForm, errors }: Props
 
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>
+            <Text style={[styles.label, { color: theme.text }]}>
                 Schedule Times <Text style={styles.required}>*</Text>
             </Text>
 
@@ -78,11 +80,17 @@ export default function TimePicker({ medicationForm, updateForm, errors }: Props
                 {medicationForm.times.map((time, index) => (
                     <TouchableOpacity
                         key={`${time}-${index}`}
-                        style={styles.timeTag}
+                        style={[
+                            styles.timeTag,
+                            {
+                                backgroundColor: isDark ? '#2D1A1A' : '#E6F4FE',
+                                borderColor: isDark ? colorsTheme.primary + '40' : '#B3E0FD'
+                            }
+                        ]}
                         onPress={() => requestEditTime(index)}
                     >
                         <Ionicons name="time-outline" size={16} color={colorsTheme.primary} />
-                        <Text style={styles.timeText}>{time}</Text>
+                        <Text style={[styles.timeText, { color: isDark ? colorsTheme.primary : colorsTheme.primary }]}>{time}</Text>
                         {isCustomFrequency && medicationForm.times.length > 1 && (
                             <TouchableOpacity
                                 style={styles.removeButton}
@@ -176,3 +184,6 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
 });
+
+
+

@@ -1,4 +1,5 @@
 import { colorsTheme } from '@/constants/theme';
+import { useTheme } from '@/context/theme-context';
 import { FormErrors, MedicationFormData } from '@/utils/ttype';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import DatePicker from './schedule-form/date-picker';
@@ -14,11 +15,13 @@ interface Props {
 }
 
 export default function ScheduleSection({ form, updateForm, errors, isAddMode }: Props) {
-    return (
-        <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Frequency & Schedule</Text>
+    const { theme, isDark } = useTheme();
 
-            <Text style={styles.label}>Frequency</Text>
+    return (
+        <View style={[styles.sectionContainer, { backgroundColor: theme.card }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Frequency & Schedule</Text>
+
+            <Text style={[styles.label, { color: theme.text }]}>Frequency</Text>
             <FrequencyOptions
                 selectedFrequency={form.frequency}
                 onSelect={(freqId, newTimes) => updateForm({ frequency: freqId as any, times: newTimes })}
@@ -48,10 +51,10 @@ export default function ScheduleSection({ form, updateForm, errors, isAddMode }:
 
             {/* Hide Medicine Always On in Add Mode */}
             {!isAddMode && (
-                <View style={styles.switchRow}>
+                <View style={[styles.switchRow, { borderTopWidth: isDark ? 1 : 0, borderTopColor: '#333', paddingTop: isDark ? 10 : 0 }]}>
                     <View style={styles.switchLabelContainer}>
-                        <Text style={styles.switchLabel}>Medicine Always On</Text>
-                        <Text style={styles.switchSubLabel}>Keep this medication active indefinitely</Text>
+                        <Text style={[styles.switchLabel, { color: theme.text }]}>Medicine Always On</Text>
+                        <Text style={[styles.switchSubLabel, { color: isDark ? theme.icon : '#888' }]}>Keep this medication active indefinitely</Text>
                     </View>
                     <Switch
                         value={form.medicineAlwaysOn}
@@ -123,3 +126,6 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
 });
+
+
+

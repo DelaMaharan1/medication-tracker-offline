@@ -43,3 +43,5 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 50 : 30,
   },
 })
+
+

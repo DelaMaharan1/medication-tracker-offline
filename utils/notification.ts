@@ -1,6 +1,6 @@
+import { Medication } from '@/utils/ttype';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { Medication } from './ttype';
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -70,35 +70,56 @@ export async function scheduleMedicationReminder(
         return [];
     }
 
-    const notificationIds: string[] = [];
-
     try {
-        for (const timeStr of medication.times) {
+        const schedulingPromises = medication.times.flatMap(timeStr => {
             const [hours, minutes] = timeStr.split(':').map(Number);
-            if (isNaN(hours) || isNaN(minutes)) continue;
+            if (isNaN(hours) || isNaN(minutes)) return [];
 
-            // Strict daily trigger at the exact user-defined time
-            const identifier = await Notifications.scheduleNotificationAsync({
-                content: {
-                    title: 'Medication Reminder',
-                    body: `Time to take ${medication.dosage} ${medication.dosageUnit} of ${medication.name}`,
-                    data: {
-                        medicationId: medication.id,
-                        medicationName: medication.name,
-                        type: 'medication',
-                        doseTime: timeStr
+            // Base meal time
+            const baseTime = new Date();
+            baseTime.setHours(hours, minutes, 0, 0);
+
+            // Calculate notification offsets based on meal relation
+            const offsets = [];
+            if (medication.withFood === 'before') {
+                offsets.push(-30); // Main reminder
+                offsets.push(-5);  // Final reminder
+            } else if (medication.withFood === 'with') {
+                offsets.push(0);
+            } else if (medication.withFood === 'after') {
+                offsets.push(30);
+            }
+
+            return offsets.map(async (offset) => {
+                const triggerTime = new Date(baseTime.getTime() + offset * 60000);
+                const h = triggerTime.getHours();
+                const m = triggerTime.getMinutes();
+
+                const identifier = await Notifications.scheduleNotificationAsync({
+                    content: {
+                        title: medication.withFood === 'before' && offset === -5 ? 'Final Reminder' : 'Medication Reminder',
+                        body: `Time to take ${medication.dosage} ${medication.dosageUnit} of ${medication.name} (${medication.withFood} meal)`,
+                        data: {
+                            medicationId: medication.id,
+                            medicationName: medication.name,
+                            type: 'medication',
+                            doseTime: timeStr, // Track against the base meal time
+                            offset: offset
+                        },
+                        sound: true,
                     },
-                    sound: true,
-                },
-                trigger: {
-                    type: Notifications.SchedulableTriggerInputTypes.DAILY,
-                    hour: hours,
-                    minute: minutes,
-                },
+                    trigger: {
+                        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+                        hour: h,
+                        minute: m,
+                    },
+                });
+                return identifier;
             });
+        });
 
-            notificationIds.push(identifier);
-        }
+        // Resolve all scheduling promises in parallel
+        const notificationIds = await Promise.all(schedulingPromises);
         return notificationIds;
     } catch (error) {
         console.error("Error scheduling medication reminder:", error);
@@ -173,11 +194,12 @@ export async function syncAllMedicationReminders(
         await cancelAllScheduledNotifications();
         if (!globalEnabled) return;
 
-        for (const medication of medications) {
+        // Process all medications in parallel
+        await Promise.all(medications.map(async (medication) => {
             if (medication.isActive && medication.reminderEnabled) {
                 await scheduleMedicationReminder(medication, durations);
             }
-        }
+        }));
     } catch (error) {
         console.error("Error syncing medication reminders:", error);
     }
@@ -197,3 +219,6 @@ export async function updateMedicationReminders(
         console.error("Error updating medication reminders:", error);
     }
 }
+
+
+

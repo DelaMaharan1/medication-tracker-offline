@@ -6,3 +6,5 @@ export const MEDICATION_TYPES = [
   { label: 'Eye/Ear Drops', value: 'drops', icon: 'eye-dropper' },
   { label: 'Other', value: 'other', icon: 'medical-bag' },
 ];
+
+

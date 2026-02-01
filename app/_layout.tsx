@@ -62,7 +62,7 @@ function RootLayoutContent() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="medication/add" />
         <Stack.Screen name="medication/edit/index" />
-        <Stack.Screen name="profile/edit" options={{ title: 'Edit Profile', headerShown: true, headerBackTitle: 'Settings' }} />
+        <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
       <StatusBar style={isDark ? "light" : "dark"} />
@@ -81,3 +81,6 @@ export default function RootLayout() {
     </CustomThemeProvider>
   );
 }
+
+
+

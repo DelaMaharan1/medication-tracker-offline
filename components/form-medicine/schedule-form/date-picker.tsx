@@ -1,3 +1,4 @@
+import { useTheme } from '@/context/theme-context';
 import { FormErrors, MedicationFormData } from '@/utils/ttype';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function DatePicker({ medicationForm, updateForm, errors }: Props) {
+    const { theme, isDark } = useTheme();
     const [showPicker, setShowPicker] = useState<'start' | 'end' | null>(null);
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -29,12 +31,8 @@ export default function DatePicker({ medicationForm, updateForm, errors }: Props
 
             if (showPicker === 'start') {
                 updateForm({ startDate: dateString });
-                // Recalculate end date if duration is set (and not ongoing/custom maybe?)
-                // Actually if start date changes, end date should shift if duration is fixed days.
-                // But simplified: Just update start date.
             } else if (showPicker === 'end') {
                 updateForm({ endDate: dateString });
-                // Optional: Recalculate duration days?
             }
         }
     };
@@ -48,23 +46,37 @@ export default function DatePicker({ medicationForm, updateForm, errors }: Props
         <View style={styles.container}>
             <View style={styles.row}>
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Start Date</Text>
+                    <Text style={[styles.label, { color: theme.text }]}>Start Date</Text>
                     <TouchableOpacity
-                        style={[styles.dateButton, errors.startDate && styles.btnError]}
+                        style={[
+                            styles.dateButton,
+                            {
+                                backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                                borderColor: isDark ? '#333' : '#e9ecef'
+                            },
+                            errors.startDate && styles.btnError
+                        ]}
                         onPress={() => setShowPicker('start')}
                     >
-                        <Ionicons name="calendar" size={20} color="#666" />
-                        <Text style={styles.dateText}>{medicationForm.startDate}</Text>
+                        <Ionicons name="calendar" size={20} color={isDark ? theme.icon : "#666"} />
+                        <Text style={[styles.dateText, { color: theme.text }]}>{medicationForm.startDate}</Text>
                     </TouchableOpacity>
                     {errors.startDate && <Text style={styles.errorText}>{errors.startDate}</Text>}
                 </View>
 
                 {(medicationForm.duration !== 'ongoing' && !medicationForm.medicineAlwaysOn) && (
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>End Date (calc.)</Text>
-                        <View style={[styles.dateButton, { backgroundColor: '#f0f0f0', borderColor: 'transparent' }, errors.endDate && styles.btnError]}>
-                            <Ionicons name="calendar-outline" size={20} color="#999" />
-                            <Text style={[styles.dateText, { color: '#999' }]}>
+                        <Text style={[styles.label, { color: theme.text }]}>End Date (calc.)</Text>
+                        <View style={[
+                            styles.dateButton,
+                            {
+                                backgroundColor: isDark ? '#0A0A0A' : '#f0f0f0',
+                                borderColor: 'transparent'
+                            },
+                            errors.endDate && styles.btnError
+                        ]}>
+                            <Ionicons name="calendar-outline" size={20} color={isDark ? '#444' : "#999"} />
+                            <Text style={[styles.dateText, { color: isDark ? '#444' : '#999' }]}>
                                 {medicationForm.endDate || 'Calculated automatically'}
                             </Text>
                         </View>
@@ -127,3 +139,6 @@ const styles = StyleSheet.create({
         color: '#333',
     },
 });
+
+
+

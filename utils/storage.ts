@@ -1,5 +1,5 @@
+import { DoseHistory, Medication } from '@/utils/ttype';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DoseHistory, Medication } from './ttype';
 
 export const MEDICATION_KEY = '@medication';
 export const DOSE_HISTORY_KEY = '@dose_history';
@@ -14,198 +14,158 @@ export function setStorageUserId(uid: string | null) {
     console.log(`[Storage] Switched context to User: ${uid || 'Guest'}`);
 }
 
-function getKey(baseKey: string): string {
-    if (currentUserId) {
-        return `${baseKey}_${currentUserId}`;
-    }
-    return baseKey; // Fallback to legacy key (Guest mode or migration pending)
-}
+/**
+ * Internal Storage Service to handle raw AsyncStorage operations
+ * Provides centralized error handling and logging.
+ */
+const StorageService = {
+    getKey(baseKey: string): string {
+        return currentUserId ? `${baseKey}_${currentUserId}` : baseKey;
+    },
 
-// --- Medication Storage Functions ---
+    async getItem<T>(baseKey: string, defaultValue: T): Promise<T> {
+        try {
+            const key = this.getKey(baseKey);
+            const data = await AsyncStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultValue;
+        } catch (error) {
+            console.error(`[StorageService] Error fetching ${baseKey}:`, error);
+            return defaultValue;
+        }
+    },
+
+    async setItem<T>(baseKey: string, value: T): Promise<void> {
+        try {
+            const key = this.getKey(baseKey);
+            await AsyncStorage.setItem(key, JSON.stringify(value));
+        } catch (error) {
+            console.error(`[StorageService] Error saving ${baseKey}:`, error);
+            throw error;
+        }
+    },
+
+    async multiRemove(baseKeys: string[]): Promise<void> {
+        try {
+            const fullKeys = baseKeys.map(k => this.getKey(k));
+            await AsyncStorage.multiRemove(fullKeys);
+        } catch (error) {
+            console.error(`[StorageService] Error removing keys ${baseKeys}:`, error);
+            throw error;
+        }
+    }
+};
+
+// --- Exported Functions (Maintained for Compatibility) ---
 
 export async function getMedication(): Promise<Medication[]> {
-    try {
-        const key = getKey(MEDICATION_KEY);
-        const data = await AsyncStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } catch (error) {
-        console.log('Error fetching medication:', error);
-        return [];
-    }
+    return StorageService.getItem<Medication[]>(MEDICATION_KEY, []);
 }
 
 export async function addMedication(medication: Medication): Promise<void> {
-    try {
-        const medications = await getMedication();
-        medications.push(medication);
-        const key = getKey(MEDICATION_KEY);
-        await AsyncStorage.setItem(key, JSON.stringify(medications));
-    } catch (error) {
-        console.log('Error adding medication:', error);
-        throw error;
-    }
+    const medications = await getMedication();
+    medications.push(medication);
+    await StorageService.setItem(MEDICATION_KEY, medications);
 }
 
 export async function updateMedication(updatedMedication: Medication): Promise<void> {
-    try {
-        const medications = await getMedication();
-        const index = medications.findIndex((medication) => medication.id === updatedMedication.id);
-        if (index !== -1) {
-            medications[index] = updatedMedication;
-            const key = getKey(MEDICATION_KEY);
-            await AsyncStorage.setItem(key, JSON.stringify(medications));
-        }
-    } catch (error) {
-        console.log('Error updating medication:', error);
-        throw error;
+    const medications = await getMedication();
+    const index = medications.findIndex((med) => med.id === updatedMedication.id);
+    if (index !== -1) {
+        medications[index] = updatedMedication;
+        await StorageService.setItem(MEDICATION_KEY, medications);
     }
 }
 
 export async function deletedMedication(id: string): Promise<void> {
-    try {
-        const medications = await getMedication();
-        const updatedMedications = medications.filter((medication) => medication.id !== id);
-        const key = getKey(MEDICATION_KEY);
-        await AsyncStorage.setItem(key, JSON.stringify(updatedMedications));
-
-        // Also delete dose history for this medication
-        await clearOneData(id);
-    } catch (error) {
-        console.log('Error deleting medication:', error);
-        throw error;
-    }
+    const medications = await getMedication();
+    const filtered = medications.filter((med) => med.id !== id);
+    await StorageService.setItem(MEDICATION_KEY, filtered);
+    await clearOneData(id);
 }
 
-// --- Dose History Storage Functions ---
-
 export async function getDoseHistory(): Promise<DoseHistory[]> {
-    try {
-        const key = getKey(DOSE_HISTORY_KEY);
-        const data = await AsyncStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } catch (error) {
-        console.log('Error getting dose history:', error);
-        throw error;
-    }
+    return StorageService.getItem<DoseHistory[]>(DOSE_HISTORY_KEY, []);
 }
 
 export async function getTodayDoses(): Promise<DoseHistory[]> {
-    try {
-        const doseHistory = await getDoseHistory();
-        const today = new Date().toDateString();
-
-        return doseHistory.filter(
-            (dose) => new Date(dose.timeStamp).toDateString() === today
-        );
-    } catch (error) {
-        console.log('Error getting today doses:', error);
-        throw error;
-    }
+    const { toLocalISOString } = require('@/utils/ttype');
+    const history = await getDoseHistory();
+    const today = toLocalISOString(new Date());
+    return history.filter(dose => dose.timeStamp.split('T')[0] === today);
 }
 
-export async function recordDose(
-    medicationId: string,
-    taken: boolean,
-    timeStamp: string
-): Promise<void> {
-    try {
-        const history = await getDoseHistory();
-        const newDose: DoseHistory = {
-            id: `${medicationId}-${timeStamp}`,
-            medicationId,
-            timeStamp,
-            taken: taken ? 1 : 0,
-        };
+export async function recordDose(medicationId: string, taken: boolean, timeStamp: string): Promise<void> {
+    const history = await getDoseHistory();
+    const newDose: DoseHistory = {
+        id: `${medicationId}-${timeStamp}`,
+        medicationId,
+        timeStamp,
+        taken: taken ? 1 : 0,
+    };
 
-        history.push(newDose);
-        const key = getKey(DOSE_HISTORY_KEY);
-        await AsyncStorage.setItem(key, JSON.stringify(history));
+    history.push(newDose);
+    await StorageService.setItem(DOSE_HISTORY_KEY, history);
 
-        if (taken) {
-            const medications = await getMedication();
-            const medication = medications.find((med) => med.id === medicationId);
-
-            if (medication && medication.currentSupply > 0) {
-                medication.currentSupply = Math.max(0, medication.currentSupply - 1);
-                await updateMedication(medication);
-            }
+    if (taken) {
+        const medications = await getMedication();
+        const medication = medications.find((med) => med.id === medicationId);
+        if (medication && medication.currentSupply > 0) {
+            medication.currentSupply = Math.max(0, medication.currentSupply - 1);
+            await updateMedication(medication);
         }
-    } catch (error) {
-        console.log('Error recording dose:', error);
-        throw error;
     }
 }
 
 export async function clearOneData(medicationId: string) {
-    try {
-        const history = await getDoseHistory();
-        const filteredHistory = history.filter(
-            (dose) => dose.medicationId !== medicationId
-        );
-        const key = getKey(DOSE_HISTORY_KEY);
-        await AsyncStorage.setItem(key, JSON.stringify(filteredHistory));
-    } catch (error) {
-        console.log('Error clearing one data:', error);
-        throw error;
-    }
+    const history = await getDoseHistory();
+    const filtered = history.filter(dose => dose.medicationId !== medicationId);
+    await StorageService.setItem(DOSE_HISTORY_KEY, filtered);
 }
 
 export async function clearAllData() {
-    try {
-        const medKey = getKey(MEDICATION_KEY);
-        const histKey = getKey(DOSE_HISTORY_KEY);
-        // Note: global notifications key usually is per device settings, but if users share device, maybe it should be scoped too?
-        // User said: "disable reminder logic globally". Usually per-user pref.
-        // Let's scope it too.
-        // But GLOBAL_NOTIFICATIONS_KEY needs to also be scoped.
-        const notifKey = getKey(GLOBAL_NOTIFICATIONS_KEY);
-
-        await AsyncStorage.multiRemove([histKey, medKey, notifKey]);
-    } catch (error) {
-        console.log('Error clearing all data:', error);
-        throw error;
-    }
+    await StorageService.multiRemove([
+        DOSE_HISTORY_KEY,
+        MEDICATION_KEY,
+        GLOBAL_NOTIFICATIONS_KEY,
+        VOICE_NOTIFICATIONS_KEY
+    ]);
 }
-// --- Global Settings Functions ---
 
 export async function getGlobalNotifications(): Promise<boolean> {
-    try {
-        const key = getKey(GLOBAL_NOTIFICATIONS_KEY);
-        const value = await AsyncStorage.getItem(key);
-        return value === null ? true : value === 'true'; // Default to true
-    } catch (error) {
-        console.log('Error getting global notifications:', error);
-        return true;
-    }
+    return StorageService.getItem<boolean>(GLOBAL_NOTIFICATIONS_KEY, true);
 }
 
 export async function setGlobalNotifications(enabled: boolean): Promise<void> {
-    try {
-        const key = getKey(GLOBAL_NOTIFICATIONS_KEY);
-        await AsyncStorage.setItem(key, String(enabled));
-    } catch (error) {
-        console.log('Error setting global notifications:', error);
-        throw error;
-    }
+    await StorageService.setItem(GLOBAL_NOTIFICATIONS_KEY, enabled);
 }
 
 export async function getVoiceNotifications(): Promise<boolean> {
-    try {
-        const key = getKey(VOICE_NOTIFICATIONS_KEY);
-        const value = await AsyncStorage.getItem(key);
-        return value === null ? true : value === 'true'; // Default to true
-    } catch (error) {
-        console.log('Error getting voice notifications:', error);
-        return true;
-    }
+    return StorageService.getItem<boolean>(VOICE_NOTIFICATIONS_KEY, true);
 }
 
+export const THEME_MODE_KEY = '@theme_mode';
+
+// ... (existing keys)
+
+// ... (existing functions)
+
 export async function setVoiceNotifications(enabled: boolean): Promise<void> {
-    try {
-        const key = getKey(VOICE_NOTIFICATIONS_KEY);
-        await AsyncStorage.setItem(key, String(enabled));
-    } catch (error) {
-        console.log('Error setting voice notifications:', error);
-        throw error;
-    }
+    await StorageService.setItem(VOICE_NOTIFICATIONS_KEY, enabled);
+}
+
+export async function getThemeMode(): Promise<'light' | 'dark' | 'system'> {
+    return StorageService.getItem<'light' | 'dark' | 'system'>(THEME_MODE_KEY, 'system');
+}
+
+export async function setThemeMode(mode: 'light' | 'dark' | 'system'): Promise<void> {
+    await StorageService.setItem(THEME_MODE_KEY, mode);
+}
+
+export const GLOBAL_REFILL_REMINDERS_KEY = '@global_refill_reminders';
+export async function getGlobalRefillReminders(): Promise<boolean> {
+    return StorageService.getItem<boolean>(GLOBAL_REFILL_REMINDERS_KEY, true);
+}
+
+export async function setGlobalRefillReminders(enabled: boolean): Promise<void> {
+    await StorageService.setItem(GLOBAL_REFILL_REMINDERS_KEY, enabled);
 }

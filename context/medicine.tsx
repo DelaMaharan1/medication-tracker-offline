@@ -11,6 +11,7 @@ export interface RefillNotification {
 
 interface MedicineContextType {
     medications: Medication[];
+    todayDoses: DoseHistory[]; // Exposed
     loading: boolean;
     refreshMedications: () => Promise<void>;
     takeMedication: (id: string, time: string) => Promise<{ success: boolean; error?: string }>;
@@ -24,6 +25,8 @@ interface MedicineContextType {
     pendingCount: number;
     globalNotifications: boolean;
     setGlobalNotifications: (enabled: boolean) => Promise<void>;
+    globalRefillReminders: boolean;
+    setGlobalRefillReminders: (enabled: boolean) => Promise<void>;
     voiceNotifications: boolean;
     setVoiceNotifications: (enabled: boolean) => Promise<void>;
 }
@@ -35,34 +38,38 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     const [todayDoses, setTodayDoses] = useState<DoseHistory[]>([]);
     const [refillNotifications, setRefillNotifications] = useState<RefillNotification[]>([]);
     const [globalNotifications, setGlobalNotificationsState] = useState(true);
+    const [globalRefillReminders, setGlobalRefillRemindersState] = useState(true);
     const [voiceNotifications, setVoiceNotificationsState] = useState(true);
     const [loading, setLoading] = useState(true);
     const appState = useRef(AppState.currentState);
 
     const refreshMedications = useCallback(async () => {
         try {
-            const { getGlobalNotifications, getVoiceNotifications, getMedication, getTodayDoses } = await import('@/utils/storage');
+            const { getGlobalNotifications, getVoiceNotifications, getMedication, getTodayDoses, getGlobalRefillReminders } = await import('@/utils/storage');
 
-            const [medData, doseData, globalEnabled, voiceEnabled] = await Promise.all([
+            const [medData, doseData, globalEnabled, voiceEnabled, globalRefillEnabled] = await Promise.all([
                 getMedication(),
                 getTodayDoses(),
                 getGlobalNotifications(),
-                getVoiceNotifications()
+                getVoiceNotifications(),
+                getGlobalRefillReminders()
             ]);
 
             setMedications(medData);
             setTodayDoses(doseData);
             setGlobalNotificationsState(globalEnabled);
             setVoiceNotificationsState(voiceEnabled);
+            setGlobalRefillRemindersState(globalRefillEnabled);
 
-            const lowStockMeds = medData.filter(med =>
+            const lowStockMeds = (globalEnabled && globalRefillEnabled) ? medData.filter(med =>
+                // Reminder enabled (implicit true per new requirement) and logic met
                 med.refillReminder &&
                 med.currentSupply <= med.refillAt
             ).map(med => ({
                 medicationId: med.id,
                 medicationName: med.name,
                 currentSupply: med.currentSupply
-            }));
+            })) : [];
             setRefillNotifications(lowStockMeds);
         } catch (error) {
             console.error('Failed to load medications', error);
@@ -98,6 +105,8 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
         return () => unsubscribe();
     }, []);
 
+    const lastSyncHash = useRef<string>('');
+
     // App State Listener (Foreground Refresh)
     useEffect(() => {
         const subscription = AppState.addEventListener('change', nextAppState => {
@@ -117,14 +126,35 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     // Sync Engine: Automatically update scheduled notifications when data changes
+    const isSyncing = useRef(false);
+
     useEffect(() => {
         const sync = async () => {
+            if (isSyncing.current) return;
+            isSyncing.current = true;
+
             try {
+                // Relevant state for sync: medications content, global toggle
+                const medicationsHash = medications.map(m =>
+                    `${m.id}-${m.updatedAt || ''}-${m.reminderEnabled}`
+                ).join('|');
+                const combinedHash = `${medicationsHash}-${globalNotifications}`;
+
+                // Only sync if actual notification-related data changed
+                if (combinedHash === lastSyncHash.current) {
+                    isSyncing.current = false;
+                    return;
+                }
+                lastSyncHash.current = combinedHash;
+
+                console.log('[SyncEngine] Data changed, rescheduling notifications...');
                 const { syncAllMedicationReminders } = await import('@/utils/notification');
                 const { DURATION_OPTIONS } = await import('@/constants/medicine/duration');
                 await syncAllMedicationReminders(medications, globalNotifications, DURATION_OPTIONS);
             } catch (error) {
                 console.error("Sync Engine Error:", error);
+            } finally {
+                isSyncing.current = false;
             }
         };
 
@@ -135,17 +165,23 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
 
     const toggleGlobalNotifications = async (enabled: boolean) => {
         try {
+            // Optimistic Update: Update State Immediately
+            setGlobalNotificationsState(enabled);
+
+            // Async Background Work
             const { setGlobalNotifications: saveGlobal, getMedication } = await import('@/utils/storage');
             const { syncAllMedicationReminders } = await import('@/utils/notification');
             const { DURATION_OPTIONS } = await import('@/constants/medicine/duration');
 
             await saveGlobal(enabled);
-            setGlobalNotificationsState(enabled);
 
+            // Sync Notifications (Heavy operation)
             const meds = await getMedication();
             await syncAllMedicationReminders(meds, enabled, DURATION_OPTIONS);
         } catch (error) {
             console.error('Failed to toggle notifications', error);
+            // Revert state on error if needed, though rare for local storage
+            setGlobalNotificationsState(!enabled);
         }
     };
 
@@ -166,10 +202,10 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     };
 
     const getCompletedDosesCount = (): number => {
-        // Only count doses for medications that still exist
-        const existingMedicationIds = new Set(medications.map(med => med.id));
+        // Only count doses for ACTIVE medications that still exist
+        const activeMedicationIds = new Set(medications.filter(med => med.isActive).map(med => med.id));
         return todayDoses.filter(dose =>
-            dose.taken === 1 && existingMedicationIds.has(dose.medicationId)
+            dose.taken === 1 && activeMedicationIds.has(dose.medicationId)
         ).length;
     };
 
@@ -202,14 +238,12 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
             const now = new Date().toISOString();
             await recordDose(id, true, now);
 
-            // Note: recordDose already updates storage, but we should update local state atomically
-            // to ensure UI consistency before re-fetching
             setMedications(prev => prev.map(m => {
                 if (m.id === id) {
                     const newSupply = Math.max(0, m.currentSupply - 1);
 
                     // 4. Refill Reminder – Event Based Trigger
-                    if (m.refillReminder && newSupply === m.refillAt) {
+                    if (globalNotifications && globalRefillReminders && m.refillReminder && newSupply === m.refillAt) {
                         setRefillNotifications(prevNotifs => {
                             if (!prevNotifs.some(n => n.medicationId === id)) {
                                 return [...prevNotifs, {
@@ -301,7 +335,8 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
         if (!globalNotifications) return [];
 
         const now = new Date();
-        const today = now.toISOString().split('T')[0];
+        const { toLocalISOString } = require('@/utils/ttype');
+        const today = toLocalISOString(now);
         const currentHour = now.getHours();
         const currentMin = now.getMinutes();
         const currentTimeMinutes = currentHour * 60 + currentMin;
@@ -314,19 +349,37 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
                 const recordedDoses = todayDoses.filter(d => d.medicationId === med.id);
                 const recordedCount = recordedDoses.length;
 
-                // Only consider untaken doses
+                // For each scheduled dose time (meal time)
                 for (let i = recordedCount; i < med.times.length; i++) {
-                    const timeStr = med.times[i];
-                    const [h, m] = timeStr.split(':').map(Number);
-                    const scheduledMinutes = h * 60 + m;
+                    const mealTimeStr = med.times[i];
+                    const [h, m] = mealTimeStr.split(':').map(Number);
+                    const mealTimeMinutes = h * 60 + m;
 
-                    // STRICT RULE: Only include in "active notifications" if it is the EXACT scheduled time
-                    // This drives the Modal and the Badge Count for current reminders
-                    if (currentTimeMinutes === scheduledMinutes) {
+                    // Calculate tolerance window relative to meal time
+                    let minOffset = 0;
+                    let maxOffset = 0;
+
+                    if (med.withFood === 'before') {
+                        minOffset = -40;
+                        maxOffset = -5;
+                    } else if (med.withFood === 'with') {
+                        minOffset = -5;
+                        maxOffset = 15;
+                    } else if (med.withFood === 'after') {
+                        minOffset = 15;
+                        maxOffset = 60;
+                    }
+
+                    const windowStart = mealTimeMinutes + minOffset;
+                    const windowEnd = mealTimeMinutes + maxOffset;
+
+                    // If current time is within the tolerance window, it's "due"
+                    if (currentTimeMinutes >= windowStart && currentTimeMinutes <= windowEnd) {
                         notifications.push({
                             medication: med,
-                            time: timeStr
+                            time: mealTimeStr
                         });
+                        break;
                     }
                 }
             }
@@ -340,6 +393,7 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     return (
         <MedicineContext.Provider value={{
             medications,
+            todayDoses,
             loading,
             refreshMedications,
             takeMedication,
@@ -353,6 +407,17 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
             pendingCount,
             globalNotifications,
             setGlobalNotifications: toggleGlobalNotifications,
+            globalRefillReminders,
+            setGlobalRefillReminders: async (enabled: boolean) => {
+                try {
+                    const { setGlobalRefillReminders: saveRefill } = await import('@/utils/storage');
+                    await saveRefill(enabled);
+                    setGlobalRefillRemindersState(enabled);
+                    await refreshMedications(); // Refresh to update notification list immediately
+                } catch (error) {
+                    console.error('Failed to toggle refill reminders', error);
+                }
+            },
             voiceNotifications,
             setVoiceNotifications: toggleVoiceNotifications
         }}>
@@ -368,3 +433,6 @@ export function useMedication() {
     }
     return context;
 }
+
+
+

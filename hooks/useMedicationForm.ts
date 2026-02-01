@@ -27,6 +27,7 @@ export function useMedicationForm() {
         frequency: 'once',
         times: ['08:00'],
         withFood: 'before',
+        mealOffsetMinutes: -30,
         instruction: '',
         startDate: toLocalISOString(new Date()),
         duration: 'ongoing',
@@ -148,3 +149,6 @@ export function useMedicationForm() {
         router // exposing router just in case, though mostly handled internally
     };
 }
+
+
+

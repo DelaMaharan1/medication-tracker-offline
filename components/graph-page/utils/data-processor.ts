@@ -237,8 +237,18 @@ export function generateHistoryData(
 
                     // Determine status
                     let status: 'taken' | 'missed' | 'pending';
+                    let displayTime = time; // Default to scheduled time
+
                     if (doseRecord) {
                         status = doseRecord.taken === 1 ? 'taken' : 'missed';
+
+                        // If taken, use the ACTUAL taken time
+                        if (status === 'taken') {
+                            const takenDate = new Date(doseRecord.timeStamp);
+                            const h = takenDate.getHours().toString().padStart(2, '0');
+                            const m = takenDate.getMinutes().toString().padStart(2, '0');
+                            displayTime = `${h}:${m}`;
+                        }
                     } else if (now > scheduledTime) {
                         status = 'missed';
                     } else {
@@ -249,7 +259,7 @@ export function generateHistoryData(
                         id: `${med.id}-${currentDate.toISOString()}-${time}`,
                         medicationId: med.id,
                         medicationName: med.name,
-                        time: time,
+                        time: displayTime, // Use the actual time if taken
                         status: status,
                         dosage: `${med.dosage} ${med.dosageUnit}`,
                     });
@@ -287,3 +297,6 @@ export function formatDateLabel(dateStr: string, period: TimePeriod): string {
             return dateStr;
     }
 }
+
+
+

@@ -1,4 +1,4 @@
-import { FormErrors, FrequencyOption, MedicationFormData, WithFoodType } from "./ttype";
+import { FormErrors, FrequencyOption, MedicationFormData, WithFoodType } from "@/utils/ttype";
 
 export function validateMedicationForm(form: MedicationFormData, FrequencyOption: FrequencyOption[], WithFoodOption: WithFoodType[]) {
     const errors: FormErrors = {};
@@ -100,3 +100,5 @@ export function validateMedicationForm(form: MedicationFormData, FrequencyOption
 export function isMedicationFormValid(errors: FormErrors): boolean {
     return Object.keys(errors).length === 0;
 }
+
+

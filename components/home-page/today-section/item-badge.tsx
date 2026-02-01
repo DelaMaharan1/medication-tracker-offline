@@ -77,3 +77,5 @@ const styles = StyleSheet.create({
         color: '#1565C0'
     }
 })
+
+

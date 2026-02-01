@@ -24,7 +24,7 @@ function isMedication(item: any): item is Medication {
 }
 
 export function TodayMedicationSection() {
-    const { medications, loading, refreshMedications, takeMedication, getTodayDoseCount, globalNotifications } = useMedication();
+    const { medications, loading, refreshMedications, takeMedication, getTodayDoseCount, globalNotifications, todayDoses } = useMedication();
     const { showSnackbar } = useSnackbar();
     const { theme, isDark } = useTheme();
     const [showAll, setShowAll] = useState(false);
@@ -39,7 +39,8 @@ export function TodayMedicationSection() {
     );
 
     const getTodayMedications = React.useMemo((): TodayMedication[] => {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
         const validMedications = medications.filter(isMedication);
 
@@ -53,38 +54,43 @@ export function TodayMedicationSection() {
                 const requiredDoses = med.times?.length || 1;
                 const isExpired = med.endDate && med.endDate < today;
 
-                // Sort times to check them in order
                 const sortedTimes = [...(med.times || [])].sort();
                 const now = new Date();
-                const currentHour = now.getHours();
-                const currentMinute = now.getMinutes();
-                const currentTimeVal = currentHour * 60 + currentMinute;
+                const currentTimeVal = now.getHours() * 60 + now.getMinutes();
 
                 let status: takenStatus = 'take';
 
                 if (doseCount >= requiredDoses) {
                     status = 'taken';
                 } else {
-                    // Check if the next scheduled dose (based on doseCount) has passed
-                    // e.g. if doseCount = 0, check sortedTimes[0]
-                    // if doseCount = 1, check sortedTimes[1]
                     const nextDoseIndex = Math.min(doseCount, sortedTimes.length - 1);
                     if (sortedTimes.length > 0) {
                         const [h, m] = sortedTimes[nextDoseIndex].split(':').map(Number);
-                        const scheduledTimeVal = h * 60 + m;
+                        const baseTimeVal = h * 60 + m;
 
-                        if (currentTimeVal > scheduledTimeVal) {
+                        // Calculate Tolerance Window
+                        let windowEnd = baseTimeVal;
+                        if (med.withFood === 'before') windowEnd = baseTimeVal - 5;
+                        else if (med.withFood === 'with') windowEnd = baseTimeVal + 15;
+                        else if (med.withFood === 'after') windowEnd = baseTimeVal + 60;
+
+                        if (currentTimeVal > windowEnd) {
                             status = 'missed';
                         }
                     }
                 }
+
+                // Find the actual last taken dose to get the REAL timestamp
+                const lastTakenDose = todayDoses
+                    ?.filter(d => d.medicationId === med.id && d.taken === 1)
+                    .sort((a, b) => new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime())[0];
 
                 return {
                     ...med,
                     doseHistory: {
                         id: `dose-${med.id}-${today}`,
                         medicationId: med.id,
-                        timeStamp: new Date().toISOString(),
+                        timeStamp: lastTakenDose?.timeStamp || new Date().toISOString(), // Use real timestamp if available
                         taken: doseCount,
                         takenStatus: status
                     },
@@ -93,7 +99,7 @@ export function TodayMedicationSection() {
             });
 
         return todayMeds;
-    }, [medications, getTodayDoseCount, globalNotifications]);
+    }, [medications, getTodayDoseCount, globalNotifications, todayDoses]);
 
     // Separate active and inactive medications
     const activeMedications = React.useMemo(() => {
@@ -190,7 +196,7 @@ export function TodayMedicationSection() {
                 </TouchableOpacity>
             </View>
 
-            <View style={{ height: 12 }} />
+            <View style={{ height: 12, marginTop: -16 }} />
 
             {/* SCENARIO 1: Empty State - No medications at all */}
             {!hasData && <MedicineEmptySection />}
@@ -229,12 +235,12 @@ export function TodayMedicationSection() {
                             <View style={styles.medicationsContainer}>
                                 {visibleInactiveMedsToShow.map((item: TodayMedication) => (
                                     <View key={item.id} style={styles.inactiveCard}>
-                                        <View style={styles.inactiveOverlay} />
                                         <ItemSection
                                             medicine={item}
                                             doseHistory={item.doseHistory!}
                                             onEdit={() => handleEdit(item.id)}
                                             onTakeMedication={() => handleTakeMedication(item.id, 'taken')}
+                                            showInactiveOverlay={true}
                                         />
                                     </View>
                                 ))}
@@ -305,16 +311,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         position: 'relative',
     },
-    inactiveOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        borderRadius: 16,
-        zIndex: 0.9,
-    },
+
     loadingContainer: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -345,3 +342,5 @@ const styles = StyleSheet.create({
         color: '#8E8E93',
     }
 });
+
+

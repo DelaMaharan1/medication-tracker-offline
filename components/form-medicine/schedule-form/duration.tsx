@@ -1,4 +1,6 @@
 import { DURATION_OPTIONS } from '@/constants/medicine/duration';
+import { colorsTheme } from '@/constants/theme';
+import { useTheme } from '@/context/theme-context';
 import { FormErrors, MedicationFormData } from '@/utils/ttype';
 import React from 'react';
 import {
@@ -16,6 +18,8 @@ interface Props {
 }
 
 export default function Duration({ medicationForm, updateForm, errors }: Props) {
+    const { theme, isDark } = useTheme();
+
     const handleDurationChange = (value: string) => {
         const updates: Partial<MedicationFormData> = { duration: value as any };
 
@@ -28,13 +32,6 @@ export default function Duration({ medicationForm, updateForm, errors }: Props) 
             if (!isNaN(days) && medicationForm.startDate) {
                 const start = new Date(medicationForm.startDate);
                 const end = new Date(start);
-                end.setDate(start.getDate() + days); // -1 to include start date? Usually duration 7 means 7 days taking it.
-                // If I start on 1st, for 7 days. 1,2,3,4,5,6,7. End date is 7th?
-                // 1 + 7 = 8. So end date is 1 + 6?
-                // Let's stick to standard behavior: start + days - 1.
-                // Actually, let's keep it simple: Start Date + Duration = Coverage.
-                // If I take it FOR 7 days starting today (21st). 21, 22, 23, 24, 25, 26, 27.
-                // 21 + 7 = 28. So end date should be 27th (21 + 6).
                 end.setDate(start.getDate() + days - 1);
                 updates.endDate = end.toISOString().split('T')[0];
             }
@@ -83,8 +80,6 @@ export default function Duration({ medicationForm, updateForm, errors }: Props) 
 
         // Only update if changed to avoid loops
         if (newEndDate !== medicationForm.endDate) {
-            // We need to be careful not to overwrite if user just cleared duration
-            // But here we are deriving state.
             if (medicationForm.duration !== 'ongoing') {
                 updateForm({ endDate: newEndDate });
             }
@@ -93,7 +88,7 @@ export default function Duration({ medicationForm, updateForm, errors }: Props) 
 
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>Duration</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Duration</Text>
 
             <View style={styles.verticalOptions}>
                 {DURATION_OPTIONS.map((option) => (
@@ -101,20 +96,31 @@ export default function Duration({ medicationForm, updateForm, errors }: Props) 
                         key={option.value}
                         style={[
                             styles.optionRow,
-                            medicationForm.duration === option.value && styles.selectedOptionRow,
+                            {
+                                backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                                borderColor: isDark ? '#333' : '#e9ecef'
+                            },
+                            medicationForm.duration === option.value && {
+                                backgroundColor: isDark ? '#2D1A1A' : '#E6F4FE',
+                                borderColor: colorsTheme.primary
+                            },
                             errors.duration && styles.errorBorder
                         ]}
                         onPress={() => handleDurationChange(option.value)}
                     >
                         <View style={[
                             styles.radioCircle,
-                            medicationForm.duration === option.value && styles.selectedRadioCircle
+                            { borderColor: isDark ? '#636366' : '#bdc3c7' },
+                            medicationForm.duration === option.value && { borderColor: colorsTheme.primary }
                         ]}>
-                            {medicationForm.duration === option.value && <View style={styles.radioDot} />}
+                            {medicationForm.duration === option.value && (
+                                <View style={[styles.radioDot, { backgroundColor: colorsTheme.primary }]} />
+                            )}
                         </View>
                         <Text style={[
                             styles.optionText,
-                            medicationForm.duration === option.value && styles.selectedOptionText
+                            { color: theme.text },
+                            medicationForm.duration === option.value && { color: colorsTheme.primary, fontWeight: '600' }
                         ]}>
                             {option.label}
                         </Text>
@@ -125,16 +131,24 @@ export default function Duration({ medicationForm, updateForm, errors }: Props) 
 
             {medicationForm.duration === 'custom' && (
                 <View>
-                    <View style={[styles.customInputContainer, errors.customDuration && styles.errorBorder]}>
-                        <Text style={styles.customLabel}>Number of days:</Text>
+                    <View style={[
+                        styles.customInputContainer,
+                        {
+                            backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                            borderColor: isDark ? '#333' : '#e9ecef'
+                        },
+                        errors.customDuration && styles.errorBorder
+                    ]}>
+                        <Text style={[styles.customLabel, { color: isDark ? theme.icon : '#666' }]}>Number of days:</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { color: theme.text }]}
                             placeholder="e.g. 10"
+                            placeholderTextColor={isDark ? '#636366' : '#999'}
                             keyboardType="numeric"
                             value={medicationForm.customDuration}
                             onChangeText={handleCustomDurationChange}
                         />
-                        <Text style={styles.daysText}>Days</Text>
+                        <Text style={[styles.daysText, { color: isDark ? theme.icon : '#666' }]}>Days</Text>
                     </View>
                     {errors.customDuration && <Text style={styles.errorText}>{errors.customDuration}</Text>}
                 </View>
@@ -236,3 +250,6 @@ const styles = StyleSheet.create({
         marginLeft: 5,
     },
 });
+
+
+

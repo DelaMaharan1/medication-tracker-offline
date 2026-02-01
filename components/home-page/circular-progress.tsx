@@ -1,4 +1,5 @@
 import { colorsTheme } from '@/constants/theme'
+import { useTheme } from '@/context/theme-context'
 import { Medication } from '@/utils/ttype'
 import React, { useEffect, useRef } from 'react'
 import {
@@ -29,6 +30,7 @@ export function CircularProgressSection({
     const strokeWidth = 15
     const radius = (size - strokeWidth) / 2
     const circumference = radius * 2 * Math.PI
+    const { theme, isDark } = useTheme();
 
     useEffect(() => {
         Animated.timing(animatedValue, {
@@ -49,7 +51,7 @@ export function CircularProgressSection({
     const totalDoses = medicine.reduce((acc, med) => acc + (med.times?.length || 0), 0)
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: isDark ? '#1E1E1E' : '#fff' }]}>
             <View style={[styles.progressContainer, { width: size, height: size }]}>
                 <Svg width={size} height={size}>
                     {/* Background Circle */}
@@ -66,7 +68,7 @@ export function CircularProgressSection({
                         cx={size / 2}
                         cy={size / 2}
                         r={radius}
-                        stroke={colorsTheme.primary}
+                        stroke={isDark ? '#d75d5dff' : colorsTheme.primary}
                         strokeWidth={strokeWidth}
                         fill="none"
                         strokeDasharray={`${circumference} ${circumference}`}
@@ -78,27 +80,27 @@ export function CircularProgressSection({
                 </Svg>
 
                 <View style={styles.statsContainer}>
-                    <Text style={styles.percentage}>
+                    <Text style={[styles.percentage, { color: isDark ? '#fff' : '#000' }]}>
                         {Math.round(Math.min(1, progress) * 100)}%
                     </Text>
-                    <Text style={styles.label}>Completed</Text>
+                    <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Completed</Text>
                 </View>
             </View>
 
             <View style={styles.infoGrid}>
                 <View style={styles.infoItem}>
-                    <Text style={styles.infoValue}>{Math.max(0, totalDoses)}</Text>
-                    <Text style={styles.infoLabel}>Total Doses</Text>
+                    <Text style={[styles.infoValue, { color: isDark ? '#fff' : '#000' }]}>{Math.max(0, totalDoses)}</Text>
+                    <Text style={[styles.infoLabel, { color: isDark ? '#fff' : '#000' }]}>Total Doses</Text>
                 </View>
                 <View style={styles.separator} />
                 <View style={styles.infoItem}>
-                    <Text style={styles.infoValue}>{Math.max(0, completedDoses)}</Text>
-                    <Text style={styles.infoLabel}>Taken</Text>
+                    <Text style={[styles.infoValue, { color: isDark ? '#fff' : '#000' }]}>{Math.max(0, completedDoses)}</Text>
+                    <Text style={[styles.infoLabel, { color: isDark ? '#fff' : '#000' }]}>Taken</Text>
                 </View>
                 <View style={styles.separator} />
                 <View style={styles.infoItem}>
-                    <Text style={styles.infoValue}>{Math.max(0, totalDoses - completedDoses)}</Text>
-                    <Text style={styles.infoLabel}>Pending</Text>
+                    <Text style={[styles.infoValue, { color: isDark ? '#fff' : '#000' }]}>{Math.max(0, totalDoses - completedDoses)}</Text>
+                    <Text style={[styles.infoLabel, { color: isDark ? '#fff' : '#000' }]}>Pending</Text>
                 </View>
             </View>
         </View>
@@ -164,3 +166,5 @@ const styles = StyleSheet.create({
         backgroundColor: '#E0E0E0',
     },
 })
+
+

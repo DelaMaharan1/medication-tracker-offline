@@ -1,5 +1,6 @@
 import { FREQUENCY_OPTION } from "@/constants/medicine/frequency-items";
 import { colorsTheme } from "@/constants/theme";
+import { useTheme } from "@/context/theme-context";
 import { FrequencyOption } from "@/utils/ttype";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -20,6 +21,7 @@ export function FrequencyOptions({
   frequencies = FREQUENCY_OPTION,
   error
 }: Props) {
+  const { theme, isDark } = useTheme();
 
   const handleSelect = (freq: FrequencyOption) => {
     // Calculate times based on frequency
@@ -44,6 +46,10 @@ export function FrequencyOptions({
             key={freq.id}
             style={[
               styles.optionCard,
+              {
+                backgroundColor: isDark ? '#1C1C1E' : 'white',
+                borderColor: isDark ? '#333' : '#e0e0e0'
+              },
               selectedFrequency === freq.id && styles.selectedOptionCard,
               error ? styles.errorBorder : null
             ]}
@@ -52,18 +58,20 @@ export function FrequencyOptions({
             <View
               style={[
                 styles.optionIcon,
+                { backgroundColor: isDark ? '#2C2C2E' : '#f5f5f5' },
                 selectedFrequency === freq.id && styles.selectedOptionIcon,
               ]}
             >
               <Ionicons
                 name={freq.icon as any}
                 size={24}
-                color={selectedFrequency === freq.id ? "white" : "#666"}
+                color={selectedFrequency === freq.id ? "white" : (isDark ? theme.icon : "#666")}
               />
             </View>
             <Text
               style={[
                 styles.optionLabel,
+                { color: theme.text },
                 selectedFrequency === freq.id && styles.selectedOptionLabel,
               ]}
             >
@@ -134,3 +142,5 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
 });
+
+

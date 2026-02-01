@@ -105,7 +105,7 @@ export function GraphContent({ graphData, stats, historyData, period, loading, d
                             <StatsGrid stats={stats} />
                         </View>
 
-                        <View style={styles.section}>
+                        <View style={styles.sectionList}>
                             <ScheduleList
                                 historyData={filteredHistoryData}
                                 period={period}
@@ -137,4 +137,10 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 20,
     },
+    sectionList: {
+        marginTop: -28,
+    }
 });
+
+
+

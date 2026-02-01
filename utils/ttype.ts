@@ -13,18 +13,10 @@ export type DosageUnit = 'mg' | 'ml' | 'tablet' | 'capsule' | 'drop' | 'puff' | 
 export type FrequencyType = 'once' | 'twice' | 'three' | 'four' | 'custom';
 
 /** Meal timing relation */
-export type WithFoodType = 'before' | 'after' | 'custom';
+export type WithFoodType = 'before' | 'with' | 'after';
 
 /**
  * Core medication entity
- * @example
- * const med: Medication = {
- *   id: 'med-123',
- *   name: 'Amoxicillin',
- *   type: 'pill',
- *   dosage: '500',
- *   dosageUnit: 'mg'
- * }
  */
 export interface Medication {
     id: string;
@@ -37,11 +29,12 @@ export interface Medication {
     notes?: string;
 
     dosage: string;
-    dosageUnit: DosageUnit; // set langsung dari form
+    dosageUnit: DosageUnit;
     frequency: FrequencyType;
-    times: string[]; //array waktu
+    times: string[];
 
     withFood: WithFoodType;
+    mealOffsetMinutes: number;
     instruction?: string;
 
     startDate: string;
@@ -77,6 +70,7 @@ export type takenStatus = 'taken' | 'take' | 'missed';
  *   takenStatus: 'taken'
  * }
  */
+
 export interface DoseHistory {
     id: string;
     medicationId: string;
@@ -186,6 +180,7 @@ export interface MedicationFormData {
     times: string[]; //array waktu
 
     withFood: WithFoodType;
+    mealOffsetMinutes: number;
     instruction?: string;
     startDate: string;
 

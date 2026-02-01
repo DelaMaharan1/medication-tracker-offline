@@ -35,12 +35,14 @@ export default function HomeScreen({ user: propUser }: Props) {
     medications,
     refreshMedications,
     getCompletedDosesCount,
+    getTodayDoseCount, // Added this
     pendingCount,
     getNotifications,
     takeMedication,
     refillNotifications,
     handleRefillLater,
-    refillMedication
+    refillMedication,
+    globalNotifications
   } = useMedication();
 
   const [showNotifications, setShowNotifications] = React.useState(false);
@@ -56,18 +58,35 @@ export default function HomeScreen({ user: propUser }: Props) {
   useFocusEffect(
     React.useCallback(() => {
       refreshMedications();
+      setShowNotifications(false); // Explicitly close modal on return/focus
       return () => { };
     }, [])
   );
 
   const calculateTotalDoses = (meds: Medication[]) => {
-    const today = new Date().toISOString().split('T')[0];
-    return meds.reduce((total, med) => {
-      // Only count active medications for today
-      const isActive = med.startDate <= today && (!med.endDate || med.endDate >= today);
-      if (!isActive) return total;
+    if (!globalNotifications) return 0;
 
-      return total + (med.times?.length || 0);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    return meds.reduce((total, med) => {
+      // Basic validity check: Is it scheduled for today regardless of activation?
+      const isScheduledToday = med.startDate <= today && (!med.endDate || med.endDate >= today);
+      if (!isScheduledToday) return total;
+
+      // Logic:
+      // 1. If Active: Count ALL scheduled times (Target)
+      // 2. If Inactive: Count ONLY what was actually taken (History)
+
+      const isActive = med.isActive && med.reminderEnabled;
+
+      if (isActive) {
+        return total + (med.times?.length || 0);
+      } else {
+        // For inactive meds, we only assume "Total" = "Taken" so they don't drag down percentage
+        // e.g. Taken 1/1 then archived -> Total becomes 1. Progress 1/1.
+        return total + getTodayDoseCount(med.id);
+      }
     }, 0)
   }
 
@@ -82,7 +101,6 @@ export default function HomeScreen({ user: propUser }: Props) {
   return (
     <View style={[styles.mainContainer, { backgroundColor: isDark ? '#151718' : '#F2F2F7' }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header - Scrollable */}
         <View style={[styles.headerWrapper, { backgroundColor: isDark ? '#151718' : '#fff' }]}>
           <LinearGradient
             colors={[colorsTheme.primary, isDark ? '#822F2F' : colorsTheme.secondary]}

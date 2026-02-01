@@ -1,5 +1,8 @@
 import { colorsTheme } from '@/constants/theme';
+import { useMedication } from '@/context/medicine';
+import { useTheme } from '@/context/theme-context';
 import { FormErrors, Medication } from '@/utils/ttype';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 interface Props {
@@ -10,57 +13,109 @@ interface Props {
 }
 
 export default function RefillReminderSection({ form, updateForm, isAddMode, errors }: Props) {
-    return (
-        <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Refill & Reminder</Text>
+    const { theme, isDark } = useTheme();
+    const medicineContext = useMedication();
 
-            <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Refill Reminder</Text>
-                <Switch
-                    value={form.refillReminder}
-                    onValueChange={(value) => updateForm({ refillReminder: value })}
-                    trackColor={{ false: '#767577', true: colorsTheme.primary }}
-                />
+    // Optimistic UI for switch
+    const [localReminderEnabled, setLocalReminderEnabled] = useState(form.reminderEnabled);
+
+    useEffect(() => {
+        setLocalReminderEnabled(form.reminderEnabled);
+    }, [form.reminderEnabled]);
+
+    return (
+        <View style={[styles.sectionContainer, { backgroundColor: theme.card }]}>
+            <View style={styles.headerRow}>
+                <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0 }]}>Refill & Reminder</Text>
+                {/* Global Indicator */}
+                {!medicineContext.globalRefillReminders && (
+                    <Text style={[styles.warningText, { color: '#FF9500' }]}>
+                        ⚠️ Globally Disabled
+                    </Text>
+                )}
             </View>
 
-            {form.refillReminder && (
-                <View style={styles.row}>
-                    <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                        <Text style={styles.label}>Current Supply</Text>
-                        <TextInput
-                            style={[styles.input, errors.currentSupply && styles.inputError]}
-                            placeholder="0"
-                            keyboardType="numeric"
-                            value={form.currentSupply?.toString()}
-                            onChangeText={(text) => updateForm({ currentSupply: parseInt(text) || 0 })}
-                        />
-                        {errors.currentSupply && <Text style={styles.errorText}>{errors.currentSupply}</Text>}
-                    </View>
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                        <Text style={styles.label}>Refill At</Text>
-                        <TextInput
-                            style={[styles.input, errors.refillAt && styles.inputError]}
-                            placeholder="0"
-                            keyboardType="numeric"
-                            value={form.refillAt?.toString()}
-                            onChangeText={(text) => updateForm({ refillAt: parseInt(text) || 0 })}
-                        />
-                        {errors.refillAt && <Text style={styles.errorText}>{errors.refillAt}</Text>}
-                    </View>
-                </View>
-            )}
+            <Text style={[styles.descriptionText, { color: isDark ? theme.icon : '#666', marginBottom: 15 }]}>
+                Set your stock levels to get alerted when running low.
+            </Text>
 
-            {/* Show Reminders Enabled ONLY in Edit Mode (as per user request: "Bagian di edit, nanti baru ditambahkan, 'reminders enabled'") */}
+            <View style={styles.row}>
+                <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+                    <Text style={[styles.label, { color: theme.text }]}>Current Supply</Text>
+                    <TextInput
+                        style={[
+                            styles.input,
+                            {
+                                backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                                borderColor: isDark ? '#333' : '#e9ecef',
+                                color: theme.text
+                            },
+                            errors.currentSupply && styles.inputError
+                        ]}
+                        placeholder="0"
+                        placeholderTextColor={isDark ? '#444' : '#999'}
+                        keyboardType="numeric"
+                        value={form.currentSupply?.toString()}
+                        onChangeText={(text) => {
+                            updateForm({
+                                currentSupply: parseInt(text) || 0,
+                                refillReminder: true
+                            });
+                        }}
+                    />
+                    {errors.currentSupply && <Text style={styles.errorText}>{errors.currentSupply}</Text>}
+                </View>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <Text style={[styles.label, { color: theme.text }]}>Refill At</Text>
+                    <TextInput
+                        style={[
+                            styles.input,
+                            {
+                                backgroundColor: isDark ? '#1C1C1E' : '#f8f9fa',
+                                borderColor: isDark ? '#333' : '#e9ecef',
+                                color: theme.text
+                            },
+                            errors.refillAt && styles.inputError
+                        ]}
+                        placeholder="0"
+                        placeholderTextColor={isDark ? '#444' : '#999'}
+                        keyboardType="numeric"
+                        value={form.refillAt?.toString()}
+                        onChangeText={(text) => updateForm({ refillAt: parseInt(text) || 0, refillReminder: true })}
+                    />
+                    {errors.refillAt && <Text style={styles.errorText}>{errors.refillAt}</Text>}
+                </View>
+            </View>
+
+            {/* Show Reminders Enabled ONLY in Edit Mode */}
             {!isAddMode && (
-                <View style={[styles.switchRow, { marginTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 20 }]}>
+                <View style={[
+                    styles.switchRow,
+                    {
+                        marginTop: 20,
+                        borderTopWidth: 1,
+                        borderTopColor: isDark ? '#333' : '#f0f0f0',
+                        paddingTop: 20
+                    }
+                ]}>
                     <View style={styles.switchLabelContainer}>
-                        <Text style={styles.switchLabel}>Reminders Enabled</Text>
-                        <Text style={styles.switchSubLabel}>Receive notifications for doses</Text>
+                        <Text style={[
+                            styles.switchLabel,
+                            { color: theme.text },
+                            !medicineContext.globalNotifications && { color: isDark ? '#444' : '#8E8E93' }
+                        ]}>Dose Notifications</Text>
+                        <Text style={[styles.switchSubLabel, { color: isDark ? theme.icon : '#888' }]}>
+                            {medicineContext.globalNotifications ? 'Receive notifications for doses' : 'Notifications disabled globally'}
+                        </Text>
                     </View>
                     <Switch
-                        value={form.reminderEnabled}
-                        onValueChange={(value) => updateForm({ reminderEnabled: value })}
+                        value={localReminderEnabled}
+                        onValueChange={(value) => {
+                            setLocalReminderEnabled(value); // Optimistic update
+                            updateForm({ reminderEnabled: value }); // Async update
+                        }}
                         trackColor={{ false: '#767577', true: colorsTheme.primary }}
+                        disabled={!medicineContext.globalNotifications}
                     />
                 </View>
             )}
@@ -81,11 +136,24 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 2,
     },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 16,
+    },
+    warningText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    descriptionText: {
+        fontSize: 14,
+        color: '#666',
     },
     label: {
         fontSize: 16,
@@ -132,7 +200,7 @@ const styles = StyleSheet.create({
     },
     inputError: {
         borderColor: '#FF3B30',
-        backgroundColor: '#FFF5F5',
+        // backgroundColor removed to keep theme consistent
     },
     errorText: {
         color: '#FF3B30',

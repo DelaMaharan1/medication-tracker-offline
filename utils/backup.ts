@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
+import { cancelAllScheduledNotifications } from './notification';
 import { DOSE_HISTORY_KEY, getDoseHistory, getMedication, MEDICATION_KEY, setStorageUserId } from './storage';
 
 export interface BackupData {
@@ -17,7 +18,6 @@ export async function backupUserData(userId: string): Promise<boolean> {
     try {
         if (!userId) return false;
 
-        // Ensure storage context is set
         setStorageUserId(userId);
 
         const medications = await getMedication();
@@ -43,13 +43,11 @@ export async function backupUserData(userId: string): Promise<boolean> {
 
 /**
  * Restore data from Firestore to local storage
- * WARNING: This overwrites local data
  */
 export async function restoreUserData(userId: string): Promise<boolean> {
     try {
         if (!userId) return false;
 
-        // Ensure storage context is set
         setStorageUserId(userId);
 
         const userDocRef = doc(db, 'users', userId);
@@ -58,17 +56,13 @@ export async function restoreUserData(userId: string): Promise<boolean> {
         if (docSnap.exists()) {
             const data = docSnap.data() as BackupData;
 
-            // Validate data structure lightly
+            //cancel all Zombie notifications 
+            await cancelAllScheduledNotifications();
+
             if (!Array.isArray(data.medications) || !Array.isArray(data.doseHistory)) {
                 console.error('[Restore] Invalid data format from cloud');
                 return false;
             }
-
-            // We need to manually overwrite AsyncStorage because storage.ts doesn't expose a "setAll" function easily
-            // But we can iterate. 
-            // Better: Re-use the keys logic by mocking or exporting keys logic. 
-            // Since we can't easily access the private "getKey" logic perfectly without hacking,
-            // let's rely on standard keys + userId suffix which seems to be the pattern in storage.ts: `${baseKey}_${currentUserId}`
 
             const medKey = `${MEDICATION_KEY}_${userId}`;
             const historyKey = `${DOSE_HISTORY_KEY}_${userId}`;
@@ -95,7 +89,6 @@ export async function deleteBackupData(userId: string): Promise<boolean> {
     try {
         if (!userId) return false;
 
-        const { deleteDoc } = await import('firebase/firestore');
         const userDocRef = doc(db, 'users', userId);
         await deleteDoc(userDocRef);
 

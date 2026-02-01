@@ -1,3 +1,4 @@
+import { useTheme } from '@/context/theme-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -9,17 +10,18 @@ interface HeaderSectionProps {
 
 export function HeaderSection({ text }: HeaderSectionProps) {
   const router = useRouter();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.header}>
       <TouchableOpacity
-        style={styles.backButton}
+        style={[styles.backButton, { backgroundColor: isDark ? '#1C1C1E' : 'white' }]}
         onPress={() => router.back()}
         activeOpacity={0.7}
       >
-        <Ionicons name="chevron-back" size={24} color="#333" />
+        <Ionicons name="chevron-back" size={24} color={isDark ? theme.text : "#333"} />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>{text} Medicine</Text>
+      <Text style={[styles.headerTitle, { color: 'white' }]}>{text} Medicine</Text>
     </View>
   )
 }
@@ -53,3 +55,5 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
 });
+
+
