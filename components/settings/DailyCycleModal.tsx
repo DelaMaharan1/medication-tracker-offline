@@ -44,7 +44,8 @@ export const DailyCycleModal = ({ visible, onClose, theme, isDark }: Props) => {
             const updatedUser: AppUser = {
                 ...(currentUser || { username: 'Guest' }),
                 wakeTime,
-                sleepTime
+                sleepTime,
+                dailyCycle: true,
             };
             await saveUser(updatedUser);
             onClose();

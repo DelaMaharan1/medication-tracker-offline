@@ -6,6 +6,7 @@ export const DOSE_HISTORY_KEY = '@dose_history';
 export const GLOBAL_NOTIFICATIONS_KEY = '@global_notifications';
 export const VOICE_NOTIFICATIONS_KEY = '@voice_notifications';
 export const USER_KEY = '@user_profile';
+export const GUEST_MODE_KEY = '@guest_mode';
 
 // --- User Context for Storage ---
 let currentUserId: string | null = null;
@@ -146,10 +147,6 @@ export async function getVoiceNotifications(): Promise<boolean> {
 
 export const THEME_MODE_KEY = '@theme_mode';
 
-// ... (existing keys)
-
-// ... (existing functions)
-
 export async function setVoiceNotifications(enabled: boolean): Promise<void> {
     await StorageService.setItem(VOICE_NOTIFICATIONS_KEY, enabled);
 }
@@ -171,10 +168,91 @@ export async function setGlobalRefillReminders(enabled: boolean): Promise<void> 
     await StorageService.setItem(GLOBAL_REFILL_REMINDERS_KEY, enabled);
 }
 
+export const DAILY_CYCLE_KEY = '@daily_cycle_enabled';
+export async function getDailyCycle(): Promise<boolean> {
+    return StorageService.getItem<boolean>(DAILY_CYCLE_KEY, false);
+}
+
+export async function setDailyCycle(enabled: boolean): Promise<void> {
+    await StorageService.setItem(DAILY_CYCLE_KEY, enabled);
+}
+
 export async function getUser(): Promise<User | null> {
     return StorageService.getItem<User | null>(USER_KEY, null);
 }
 
 export async function saveUser(user: User): Promise<void> {
     await StorageService.setItem(USER_KEY, user);
+}
+
+export async function getGuestMode(): Promise<boolean> {
+    try {
+        const data = await AsyncStorage.getItem(GUEST_MODE_KEY);
+        return data ? JSON.parse(data) : false;
+    } catch {
+        return false;
+    }
+}
+
+export async function setGuestMode(enabled: boolean): Promise<void> {
+    try {
+        await AsyncStorage.setItem(GUEST_MODE_KEY, JSON.stringify(enabled));
+    } catch (e) {
+        console.error("Failed to set guest mode", e);
+    }
+}
+
+export async function migrateGuestDataToUser(userId: string): Promise<void> {
+    try {
+        // 1. Read Guest Data (Raw Keys)
+        const guestMedsStr = await AsyncStorage.getItem(MEDICATION_KEY);
+        const guestMeds: Medication[] = guestMedsStr ? JSON.parse(guestMedsStr) : [];
+
+        const guestHistoryStr = await AsyncStorage.getItem(DOSE_HISTORY_KEY);
+        const guestHistory: DoseHistory[] = guestHistoryStr ? JSON.parse(guestHistoryStr) : [];
+
+        // If no guest data, nothing to do
+        if (guestMeds.length === 0 && guestHistory.length === 0) return;
+
+        console.log(`[Migration] Found ${guestMeds.length} meds and ${guestHistory.length} history items from Guest.`);
+
+        // 2. Read Target User Data (Suffixed Keys)
+        const userMedsKey = `${MEDICATION_KEY}_${userId}`;
+        const userHistoryKey = `${DOSE_HISTORY_KEY}_${userId}`;
+
+        const userMedsStr = await AsyncStorage.getItem(userMedsKey);
+        const existingUserMeds: Medication[] = userMedsStr ? JSON.parse(userMedsStr) : [];
+
+        const userHistoryStr = await AsyncStorage.getItem(userHistoryKey);
+        const existingUserHistory: DoseHistory[] = userHistoryStr ? JSON.parse(userHistoryStr) : [];
+
+        // 3. Merge Strategies
+        // Medications: ID collision is rare (UUID). We can safely concat.
+        // If strict, we could filter duplicates by ID.
+        const mergedMeds = [...existingUserMeds];
+        guestMeds.forEach(gMed => {
+            if (!mergedMeds.some(uMed => uMed.id === gMed.id)) {
+                mergedMeds.push(gMed);
+            }
+        });
+
+        const mergedHistory = [...existingUserHistory];
+        guestHistory.forEach(gHist => {
+            if (!mergedHistory.some(uHist => uHist.id === gHist.id)) {
+                mergedHistory.push(gHist);
+            }
+        });
+
+        // 4. Save to User
+        await AsyncStorage.setItem(userMedsKey, JSON.stringify(mergedMeds));
+        await AsyncStorage.setItem(userHistoryKey, JSON.stringify(mergedHistory));
+
+        console.log(`[Migration] Successfully merged data to User: ${userId}`);
+
+        // 5. Clear Guest Data (Preferences too?)
+        await AsyncStorage.multiRemove([MEDICATION_KEY, DOSE_HISTORY_KEY]);
+
+    } catch (error) {
+        console.error("Failed to migrate guest data:", error);
+    }
 }

@@ -6,7 +6,7 @@ import { Snackbar } from 'react-native-paper';
 type SnackbarType = 'success' | 'error' | 'info';
 
 interface SnackbarContextType {
-    showSnackbar: (message: string, type?: SnackbarType) => void;
+    showSnackbar: (message: string, type?: SnackbarType, action?: { label: string, onPress?: () => void }) => void;
 }
 
 const SnackbarContext = createContext<SnackbarContextType | undefined>(undefined);
@@ -23,10 +23,12 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState('');
     const [type, setType] = useState<SnackbarType>('info');
+    const [action, setAction] = useState<{ label: string, onPress?: () => void } | undefined>(undefined);
 
-    const showSnackbar = (msg: string, snackType: SnackbarType = 'info') => {
+    const showSnackbar = (msg: string, snackType: SnackbarType = 'info', snackAction?: { label: string, onPress?: () => void }) => {
         setMessage(msg);
         setType(snackType);
+        setAction(snackAction);
         setVisible(true);
     };
 
@@ -46,9 +48,10 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
                     duration={3000}
                     style={{ backgroundColor: getBackgroundColor(), borderRadius: 8, margin: 16 }}
                     action={{
-                        label: 'Close',
+                        label: action?.label || 'Close',
                         onPress: () => {
-                            // Do something
+                            if (action?.onPress) action.onPress();
+                            setVisible(false);
                         },
                         textColor: 'white'
                     }}

@@ -205,6 +205,7 @@ export interface User {
     username: string;
     wakeTime?: string;
     sleepTime?: string;
+    dailyCycle: boolean;
 }
 
 /**

@@ -9,7 +9,7 @@ import { useMedication } from '@/context/medicine';
 import { useSnackbar as useAppSnackbar } from '@/context/snackbar';
 import { useTheme } from '@/context/theme-context';
 import { backupUserData, restoreUserData } from '@/utils/backup';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { getAuth, signOut, User } from 'firebase/auth';
 import React, { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
@@ -18,6 +18,7 @@ export default function SettingsScreen() {
   const medicineContext = useMedication();
   const themeContext = useTheme();
   const { showSnackbar } = useAppSnackbar();
+  const router = useRouter();
 
   const { clearAllData, globalNotifications, setGlobalNotifications } = medicineContext;
   const { theme, isDark, mode, setMode } = themeContext;
@@ -57,6 +58,16 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleLogout = async () => {
+    try {
+      const { auth } = await import('@/utils/firebase');
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout failed", error);
+      Alert.alert("Logout Error", "Failed to sign out. Please try again.");
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#151718' : '#F2F2F7' }]}>
       <Stack.Screen options={{
@@ -67,16 +78,30 @@ export default function SettingsScreen() {
         headerTintColor: theme.text
       }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <ProfileCard name={currentUser?.displayName} email={currentUser?.email} />
+        <ProfileCard
+          name={currentUser?.displayName}
+          email={currentUser?.email}
+          isGuest={!currentUser}
+        />
 
         <SettingsGroup title="Preferences">
           <SettingRow
             icon="time-outline"
             title="Daily Cycle"
-            subtitle="Set wake and sleep times"
-            type="arrow"
-            onPress={() => setShowDailyCycleModal(true)}
+            subtitle="Enable daily schedule optimization"
+            type="switch"
+            value={medicineContext.dailyCycle}
+            onValueChange={medicineContext.setDailyCycle}
           />
+          {medicineContext.dailyCycle && (
+            <SettingRow
+              icon="settings-outline"
+              title="Configure Schedule"
+              subtitle="Set wake and sleep times"
+              type="arrow"
+              onPress={() => setShowDailyCycleModal(true)}
+            />
+          )}
           <View style={[styles.divider, { backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]} />
           <SettingRow
             icon="notifications"
@@ -123,7 +148,7 @@ export default function SettingsScreen() {
             type="arrow"
             onPress={async () => {
               if (!currentUser) {
-                Alert.alert("Error", "You must be logged in to backup.");
+                Alert.alert("Guest Mode", "Please sign in to backup your data.");
                 return;
               }
               const success = await backupUserData(currentUser.uid);
@@ -138,6 +163,11 @@ export default function SettingsScreen() {
             subtitle="Overwrite local data from cloud"
             type="arrow"
             onPress={() => {
+              if (!currentUser) {
+                Alert.alert("Guest Mode", "Please sign in to restore data.");
+                return;
+              }
+
               Alert.alert(
                 "Restore Data",
                 "This will overwrite your local data with the backup from cloud. Continue?",
@@ -185,7 +215,11 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
-        <SettingsFooter onLogout={() => signOut(getAuth())} />
+        <SettingsFooter
+          onLogout={handleLogout}
+          isGuest={!currentUser}
+          onSignIn={() => router.push('/(auth)/sign-in')}
+        />
       </ScrollView>
 
       <AboutModal
@@ -208,7 +242,7 @@ export default function SettingsScreen() {
         theme={theme}
         isDark={isDark}
       />
-    </View>
+    </View >
   );
 }
 

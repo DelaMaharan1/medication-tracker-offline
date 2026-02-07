@@ -1,5 +1,6 @@
 import { FREQUENCY_OPTION } from '@/constants/medicine/frequency-items';
 import { WITH_FOOD_OPTIONS } from '@/constants/medicine/with-food-option';
+import { useMedication } from '@/context/medicine';
 import { useSnackbar } from '@/context/snackbar';
 import { addMedication, deletedMedication, getMedication, getUser, updateMedication } from '@/utils/storage';
 import { FormErrors, Medication, MedicationFormData, WithFoodType, toLocalISOString } from '@/utils/ttype';
@@ -166,13 +167,17 @@ export function useMedicationForm() {
         );
     };
 
+    const { dailyCycle } = useMedication();
+
     const handleSubmit = async () => {
         try {
+            const validationProfile = userProfile ? { ...userProfile, dailyCycle } : undefined;
+
             const validationError = validateMedicationForm(
                 form,
                 FREQUENCY_OPTION,
                 WITH_FOOD_OPTIONS.map(opt => opt.value) as WithFoodType[],
-                userProfile || undefined
+                validationProfile
             );
             setErrors(validationError);
 

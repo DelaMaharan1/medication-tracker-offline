@@ -3,6 +3,7 @@ import { HomeHeaderSection } from '@/components/home-page/home-header';
 import { TodayMedicationSection } from '@/components/home-page/today-medicine';
 import { colorsTheme } from '@/constants/theme';
 import { useMedication } from '@/context/medicine';
+import { useSnackbar as useAppSnackbar } from '@/context/snackbar';
 import { useTheme } from '@/context/theme-context';
 import { Medication, User } from '@/utils/ttype';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ interface Props {
   user?: User
 }
 
+import { ClosestMedicine } from '@/components/home-page/hour-medicine';
 import NotificationCard from '@/components/notification/notification-card';
 import RefillModal from '@/components/notification/refill-modal';
 import RefillNotificationCard from '@/components/notification/refill-notification';
@@ -67,6 +69,10 @@ export default function HomeScreen({ user: propUser }: Props) {
     }
   }, [params.action, params.t]);
 
+  const { showSnackbar } = useAppSnackbar();
+  // Keep track of which (medId + time) we have already alerted for THIS session
+  const [alertedDoses, setAlertedDoses] = React.useState<string[]>([]);
+
   useFocusEffect(
     React.useCallback(() => {
       refreshMedications();
@@ -76,6 +82,36 @@ export default function HomeScreen({ user: propUser }: Props) {
       }
       return () => { };
     }, [params.action])
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      // Check for strictly upcoming dose to alert
+      const now = new Date();
+      const currentTimeVal = now.getHours() * 60 + now.getMinutes();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      // Flatten all scheduled times for today into a list of candidates
+      const allUpcoming = medications.reduce<{ medName: string, time: string, timeVal: number, id: string }[]>((acc, med) => {
+        if (!med.isActive) return acc;
+        if (med.startDate > todayStr || (med.endDate && med.endDate < todayStr)) return acc;
+
+        med.times.forEach(t => {
+          const [h, m] = t.split(':').map(Number);
+          const tVal = h * 60 + m;
+          if (tVal > currentTimeVal) {
+            acc.push({ medName: med.name, time: t, timeVal: tVal, id: med.id });
+          }
+        });
+        return acc;
+      }, []);
+
+      // Sort by time and take the first one
+      allUpcoming.sort((a, b) => a.timeVal - b.timeVal);
+      const nextDose = allUpcoming[0];
+
+      return () => { };
+    }, [medications, alertedDoses])
   );
 
   const calculateTotalDoses = (meds: Medication[]) => {
@@ -98,8 +134,6 @@ export default function HomeScreen({ user: propUser }: Props) {
       if (isActive) {
         return total + (med.times?.length || 0);
       } else {
-        // For inactive meds, we only assume "Total" = "Taken" so they don't drag down percentage
-        // e.g. Taken 1/1 then archived -> Total becomes 1. Progress 1/1.
         return total + getTodayDoseCount(med.id);
       }
     }, 0)
@@ -127,6 +161,10 @@ export default function HomeScreen({ user: propUser }: Props) {
                 onNotificationPress={() => setShowNotifications(true)}
                 notificationCount={notifications.length + refillNotifications.length}
               />
+            </View>
+
+            <View style={styles.closestReminder}>
+              <ClosestMedicine />
             </View>
 
             <View style={styles.progressContainer}>
@@ -275,6 +313,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 10,
   },
+  closestReminder: {
+    marginHorizontal: 4,
+    marginBottom: 10,
+    paddingHorizontal: 6
+  }
 })
 
 const modalStyles = StyleSheet.create({

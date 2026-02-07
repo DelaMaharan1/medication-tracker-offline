@@ -126,7 +126,6 @@ export function CalendarView() {
             const startStr = med.startDate;
             const endStr = med.endDate;
 
-            // Use local date string (YYYY-MM-DD) for comparison
             const selYear = selectedDate.getFullYear();
             const selMonth = String(selectedDate.getMonth() + 1).padStart(2, '0');
             const selDay = String(selectedDate.getDate()).padStart(2, '0');
@@ -138,6 +137,19 @@ export function CalendarView() {
             return isAfterStart && isBeforeEnd;
         });
 
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        if (selectedDate > todayStart) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Text style={[styles.emptyText, { color: isDark ? theme.icon : '#8E8E93' }]}>
+                        Cannot view future schedules.
+                    </Text>
+                </View>
+            );
+        }
+
         if (validMedis.length === 0) {
             return (
                 <View style={styles.emptyContainer}>
@@ -148,7 +160,7 @@ export function CalendarView() {
 
         return validMedis.map((medication) => {
             const dose = dayDoses.find(d => d.medicationId === medication.id);
-            const scheduledTimeStr = medication.times[0] || '08:00'; // Default or first time
+            const scheduledTimeStr = medication.times[0] || '08:00';
             const [h, m] = scheduledTimeStr.split(':').map(Number);
 
             const scheduledDateObj = new Date(selectedDate);

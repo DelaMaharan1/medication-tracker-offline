@@ -8,26 +8,38 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 interface ProfileCardProps {
     name?: string | null;
     email?: string | null;
+    isGuest?: boolean;
 }
 
-export const ProfileCard = ({ name, email }: ProfileCardProps) => {
+export const ProfileCard = ({ name, email, isGuest }: ProfileCardProps) => {
     const router = useRouter();
     const { theme } = useTheme();
+
+    const handlePress = () => {
+        if (isGuest) {
+            return;
+        }
+        router.push('/profile/edit');
+    };
 
     return (
         <TouchableOpacity
             style={[styles.profileCard, { backgroundColor: theme.background }]}
-            onPress={() => router.push('/profile/edit')}
-            activeOpacity={0.7}
+            onPress={handlePress}
+            activeOpacity={isGuest ? 1 : 0.7}
         >
             <View style={styles.avatarPlaceholder}>
                 <Ionicons name="person" size={32} color="white" />
             </View>
             <View style={styles.profileInfo}>
-                <Text style={[styles.profileName, { color: theme.text }]}>{name || 'Health Partner'}</Text>
-                <Text style={[styles.profileEmail, { color: theme.icon }]}>{email || 'Your Personalized Assistant'}</Text>
+                <Text style={[styles.profileName, { color: theme.text }]}>
+                    {isGuest ? 'Guest User' : (name || 'Health Partner')}
+                </Text>
+                <Text style={[styles.profileEmail, { color: theme.icon }]}>
+                    {isGuest ? 'Sign in to sync data' : (email || 'Your Personalized Assistant')}
+                </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.icon} />
+            {!isGuest && <Ionicons name="chevron-forward" size={20} color={theme.icon} />}
         </TouchableOpacity>
     );
 };

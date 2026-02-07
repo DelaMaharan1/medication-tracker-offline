@@ -11,7 +11,6 @@ Notifications.setNotificationHandler({
     }),
 });
 
-// Register push token 
 export async function registerForPushNotificationAsync(): Promise<string | null> {
     let token: string | null = null;
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -103,12 +102,12 @@ export async function scheduleMedicationReminder(
                             medicationId: medication.id,
                             medicationName: medication.name,
                             type: 'medication',
-                            doseTime: timeStr, // Track against the base meal time
+                            doseTime: timeStr,
                             offset: offset
                         },
                         sound: true,
                         // @ts-ignore
-                        channelId: 'default', // Force usage of the high-importance channel
+                        channelId: 'default',
                     },
                     trigger: {
                         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -120,7 +119,6 @@ export async function scheduleMedicationReminder(
             });
         });
 
-        // Resolve all scheduling promises in parallel
         const notificationIds = await Promise.all(schedulingPromises);
         return notificationIds;
     } catch (error) {

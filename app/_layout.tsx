@@ -18,11 +18,26 @@ export const unstable_settings = {
 function RootLayoutContent() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [isGuest, setIsGuest] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
   const { isDark } = useTheme();
 
   useEffect(() => {
+    const checkGuest = async () => {
+      try {
+        const { getGuestMode } = await import('@/utils/storage');
+        const guest = await getGuestMode();
+        setIsGuest(guest);
+      } catch (e) {
+        setIsGuest(false);
+      } finally {
+        setGuestLoading(false);
+      }
+    };
+    checkGuest();
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (initializing) setInitializing(false);
@@ -32,20 +47,20 @@ function RootLayoutContent() {
   }, []);
 
   useEffect(() => {
-    if (initializing) return;
+    if (initializing || guestLoading) return;
 
     const currentSegments = segments as string[];
     const inAuthGroup = currentSegments[0] === '(auth)';
-    const isSplash = currentSegments.length === 0 || currentSegments[0] === 'index';
+    const isSplash = currentSegments.length === 0 || currentSegments[0] === 'splash-auth';
 
-    if (!user && !inAuthGroup && !isSplash) {
+    if (!user && !isGuest && !inAuthGroup && !isSplash) {
       router.replace('/(auth)/sign-in');
     } else if (user && (inAuthGroup || isSplash)) {
       router.replace('/(tabs)/home');
     }
-  }, [user, segments, initializing]);
+  }, [user, isGuest, segments, initializing, guestLoading]);
 
-  if (initializing) {
+  if (initializing || guestLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#EF4444" />
@@ -58,6 +73,7 @@ function RootLayoutContent() {
       <ModalNotifications />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="splash-auth" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="medication/add" />

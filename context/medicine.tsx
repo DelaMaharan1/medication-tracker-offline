@@ -29,6 +29,8 @@ interface MedicineContextType {
     setGlobalRefillReminders: (enabled: boolean) => Promise<void>;
     voiceNotifications: boolean;
     setVoiceNotifications: (enabled: boolean) => Promise<void>;
+    dailyCycle: boolean;
+    setDailyCycle: (enabled: boolean) => Promise<void>;
 }
 
 const MedicineContext = createContext<MedicineContextType | undefined>(undefined);
@@ -40,19 +42,21 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     const [globalNotifications, setGlobalNotificationsState] = useState(true);
     const [globalRefillReminders, setGlobalRefillRemindersState] = useState(true);
     const [voiceNotifications, setVoiceNotificationsState] = useState(true);
+    const [dailyCycle, setDailyCycleState] = useState(false);
     const [loading, setLoading] = useState(true);
     const appState = useRef(AppState.currentState);
 
     const refreshMedications = useCallback(async () => {
         try {
-            const { getGlobalNotifications, getVoiceNotifications, getMedication, getTodayDoses, getGlobalRefillReminders } = await import('@/utils/storage');
+            const { getGlobalNotifications, getVoiceNotifications, getMedication, getTodayDoses, getGlobalRefillReminders, getDailyCycle } = await import('@/utils/storage');
 
-            const [medData, doseData, globalEnabled, voiceEnabled, globalRefillEnabled] = await Promise.all([
+            const [medData, doseData, globalEnabled, voiceEnabled, globalRefillEnabled, dailyCycleEnabled] = await Promise.all([
                 getMedication(),
                 getTodayDoses(),
                 getGlobalNotifications(),
                 getVoiceNotifications(),
-                getGlobalRefillReminders()
+                getGlobalRefillReminders(),
+                getDailyCycle()
             ]);
 
             setMedications(medData);
@@ -60,6 +64,7 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
             setGlobalNotificationsState(globalEnabled);
             setVoiceNotificationsState(voiceEnabled);
             setGlobalRefillRemindersState(globalRefillEnabled);
+            setDailyCycleState(dailyCycleEnabled);
 
             const lowStockMeds = (globalEnabled && globalRefillEnabled) ? medData.filter(med =>
                 // Reminder enabled (implicit true per new requirement) and logic met
@@ -82,10 +87,17 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const { auth } = require('@/utils/firebase');
         const { onAuthStateChanged } = require('firebase/auth');
-        const { setStorageUserId } = require('@/utils/storage');
+        const { setStorageUserId, setGuestMode, getGuestMode, migrateGuestDataToUser } = require('@/utils/storage');
 
         const unsubscribe = onAuthStateChanged(auth, async (user: any) => {
             if (user) {
+                const isGuest = await getGuestMode();
+                if (isGuest) {
+                    console.log('Migrating guest data to user:', user.uid);
+                    await migrateGuestDataToUser(user.uid);
+                    await setGuestMode(false);
+                }
+
                 console.log('User signed in:', user.uid);
                 setStorageUserId(user.uid);
                 await refreshMedications();
@@ -192,6 +204,17 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
             setVoiceNotificationsState(enabled);
         } catch (error) {
             console.error('Failed to toggle voice notifications', error);
+        }
+    };
+
+    const toggleDailyCycle = async (enabled: boolean) => {
+        try {
+            const { setDailyCycle: saveCycle } = await import('@/utils/storage');
+            await saveCycle(enabled);
+            setDailyCycleState(enabled);
+
+        } catch (error) {
+            console.error('Failed to toggle daily cycle', error);
         }
     };
 
@@ -419,10 +442,12 @@ export function MedicineProvider({ children }: { children: React.ReactNode }) {
                 }
             },
             voiceNotifications,
-            setVoiceNotifications: toggleVoiceNotifications
+            setVoiceNotifications: toggleVoiceNotifications,
+            dailyCycle,
+            setDailyCycle: toggleDailyCycle
         }}>
             {children}
-        </MedicineContext.Provider>
+        </MedicineContext.Provider >
     );
 }
 

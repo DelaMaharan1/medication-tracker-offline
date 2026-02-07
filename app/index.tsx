@@ -44,10 +44,16 @@ export default function SplashScreen() {
         }),
       ]).start();
 
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
         const { auth } = require('@/utils/firebase');
-        if (!auth.currentUser) {
-          router.replace('/(auth)/sign-in');
+        const { getGuestMode } = require('@/utils/storage');
+
+        const isGuest = await getGuestMode();
+
+        if (!auth.currentUser && !isGuest) {
+          router.replace('/splash-auth');
+        } else {
+          router.replace('/(tabs)/home');
         }
       }, 2500);
       return () => clearTimeout(timer);

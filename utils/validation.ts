@@ -4,7 +4,7 @@ export function validateMedicationForm(
     form: MedicationFormData,
     FrequencyOption: FrequencyOption[],
     WithFoodOption: WithFoodType[],
-    userProfile?: { wakeTime: string; sleepTime: string }
+    userProfile?: { wakeTime: string; sleepTime: string, dailyCycle: boolean }
 ) {
     const errors: FormErrors = {};
     if (!form.name.trim()) {
@@ -42,32 +42,33 @@ export function validateMedicationForm(
         }
     }
 
-    // Time Validation against User Profile
-    if (userProfile && form.times && form.times.length > 0) {
-        const { wakeTime, sleepTime } = userProfile;
-        const [wakeH, wakeM] = wakeTime.split(':').map(Number);
-        const [sleepH, sleepM] = sleepTime.split(':').map(Number);
-        const wakeMins = wakeH * 60 + wakeM;
-        const sleepMins = sleepH * 60 + sleepM;
+    if (userProfile && !userProfile.dailyCycle === false) {
+        if (userProfile && form.times && form.times.length > 0) {
+            const { wakeTime, sleepTime } = userProfile;
+            const [wakeH, wakeM] = wakeTime.split(':').map(Number);
+            const [sleepH, sleepM] = sleepTime.split(':').map(Number);
+            const wakeMins = wakeH * 60 + wakeM;
+            const sleepMins = sleepH * 60 + sleepM;
 
-        const isOvernight = sleepMins < wakeMins;
+            const isOvernight = sleepMins < wakeMins;
 
-        for (const time of form.times) {
-            const [h, m] = time.split(':').map(Number);
-            const tMins = h * 60 + m;
+            for (const time of form.times) {
+                const [h, m] = time.split(':').map(Number);
+                const tMins = h * 60 + m;
 
-            let inRange = false;
-            if (isOvernight) {
-                // Awake is [Wake, 24h) OR [0, Sleep)
-                inRange = (tMins >= wakeMins) || (tMins < sleepMins);
-            } else {
-                // Awake is [Wake, Sleep)
-                inRange = (tMins >= wakeMins) && (tMins < sleepMins);
-            }
+                let inRange = false;
+                if (isOvernight) {
+                    // Awake is [Wake, 24h) OR [0, Sleep)
+                    inRange = (tMins >= wakeMins) || (tMins < sleepMins);
+                } else {
+                    // Awake is [Wake, Sleep)
+                    inRange = (tMins >= wakeMins) && (tMins < sleepMins);
+                }
 
-            if (!inRange) {
-                errors.times = `Time ${time} is during your sleeping hours (${userProfile.sleepTime} - ${userProfile.wakeTime}). Please adjust or change your cycle in Settings.`;
-                break;
+                if (!inRange) {
+                    errors.times = `Time ${time} is during your sleeping hours (${userProfile.sleepTime} - ${userProfile.wakeTime}). Please adjust or change your cycle in Settings.`;
+                    break;
+                }
             }
         }
     }

@@ -41,13 +41,19 @@ export function StatsGrid({ stats }: StatsGridProps) {
     return (
         <View style={styles.container}>
             <View style={styles.row}>
-                {allStats.slice(0, 2).map((item, index) => (
+                {allStats.slice(0, 1).map((item, index) => (
                     <View key={index} style={styles.flexCard}>
                         <StatCard data={item} />
                     </View>
                 ))}
             </View>
-
+            <View style={styles.row}>
+                {allStats.slice(1, 2).map((item, index) => (
+                    <View key={index} style={styles.flexCard}>
+                        <StatCard data={item} />
+                    </View>
+                ))}
+            </View>
             <View style={styles.row}>
                 {allStats.slice(2, 4).map((item, index) => (
                     <View key={index} style={styles.flexCard}>
