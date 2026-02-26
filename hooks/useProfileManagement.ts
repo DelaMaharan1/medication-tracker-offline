@@ -37,7 +37,8 @@ export function useProfileManagement(user: User | null, auth: any, clearAllData:
             const appUser: AppUser = {
                 username: displayName.trim(),
                 wakeTime,
-                sleepTime
+                sleepTime,
+                dailyCycle: false
             };
             await saveUser(appUser);
 

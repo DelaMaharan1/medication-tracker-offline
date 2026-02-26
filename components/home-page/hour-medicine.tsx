@@ -34,16 +34,6 @@ export function ClosestMedicine() {
                     const [h, m] = time.split(':').map(Number);
                     const doseMinutes = h * 60 + m;
 
-                    // We want the smallest NON-NEGATIVE difference (future/now)
-                    // If we want to show overdue, we'd look for negative diffs that aren't taken.
-                    // For now, let's focus on "Next Upcoming" as per standard "Closest" logic.
-                    // If user wants overdue specific, we can adjust. 
-                    // Let's stick to future >= currentMinutes.
-
-                    // Actually, if it's 14:05 and dose was 14:00 and not taken, it IS the closest relevant one.
-                    // But the prompt says "kurang berapa menit/ jam terdekat obat diminum" (how many mins/hrs left UNTIL).
-                    // This implies future tense. So we stick to diff >= 0.
-
                     let diff = doseMinutes - currentMinutes;
 
                     if (diff >= 0 && diff < closestDiff) {
@@ -81,7 +71,6 @@ export function ClosestMedicine() {
         };
 
         updateClosest();
-        // Update every minute to keep countdown fresh
         const interval = setInterval(updateClosest, 60000);
         return () => clearInterval(interval);
     }, [medications, todayDoses]);

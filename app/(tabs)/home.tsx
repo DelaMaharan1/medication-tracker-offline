@@ -30,9 +30,9 @@ export default function HomeScreen({ user: propUser }: Props) {
   const { theme, isDark } = useTheme();
 
   // Create a user object that matches the expected interface
-  const user = propUser || {
+  const user: User = propUser || {
     username: currentUser?.displayName || 'User',
-    email: currentUser?.email || ''
+    dailyCycle: false
   };
 
   const {
@@ -84,35 +84,54 @@ export default function HomeScreen({ user: propUser }: Props) {
     }, [params.action])
   );
 
-  useFocusEffect(
-    React.useCallback(() => {
-      // Check for strictly upcoming dose to alert
-      const now = new Date();
-      const currentTimeVal = now.getHours() * 60 + now.getMinutes();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     // Check for strictly upcoming dose to alert
+  //     const now = new Date();
+  //     const currentTimeVal = now.getHours() * 60 + now.getMinutes();
+  //     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-      // Flatten all scheduled times for today into a list of candidates
-      const allUpcoming = medications.reduce<{ medName: string, time: string, timeVal: number, id: string }[]>((acc, med) => {
-        if (!med.isActive) return acc;
-        if (med.startDate > todayStr || (med.endDate && med.endDate < todayStr)) return acc;
+  //     // Flatten all scheduled times for today into a list of candidates
+  //     const allUpcoming = medications.reduce<{ medName: string, time: string, timeVal: number, id: string }[]>((acc, med) => {
+  //       if (!med.isActive) return acc;
+  //       if (med.startDate > todayStr || (med.endDate && med.endDate < todayStr)) return acc;
 
-        med.times.forEach(t => {
-          const [h, m] = t.split(':').map(Number);
-          const tVal = h * 60 + m;
-          if (tVal > currentTimeVal) {
-            acc.push({ medName: med.name, time: t, timeVal: tVal, id: med.id });
-          }
-        });
-        return acc;
-      }, []);
+  //       med.times.forEach(t => {
+  //         const [h, m] = t.split(':').map(Number);
+  //         const tVal = h * 60 + m;
+  //         if (tVal > currentTimeVal) {
+  //           acc.push({ medName: med.name, time: t, timeVal: tVal, id: med.id });
+  //         }
+  //       });
+  //       return acc;
+  //     }, []);
 
-      // Sort by time and take the first one
-      allUpcoming.sort((a, b) => a.timeVal - b.timeVal);
-      const nextDose = allUpcoming[0];
+  //     // Sort by time and take the first one
+  //     allUpcoming.sort((a, b) => a.timeVal - b.timeVal);
+  //     const nextDose = allUpcoming[0];
 
-      return () => { };
-    }, [medications, alertedDoses])
-  );
+  //     if (nextDose) {
+  //       const doseKey = `${nextDose.id}-${nextDose.time}`;
+  //       // Only show if we haven't alerted this specific dose in this session/state
+  //       if (!alertedDoses.includes(doseKey)) {
+  //         showSnackbar(
+  //           `Upcoming: ${nextDose.medName} at ${nextDose.time}`,
+  //           'info',
+  //           {
+  //             label: 'Understand',
+  //             onPress: () => {
+  //               // Mark as alerted so we don't annoy the user again immediately
+  //               setAlertedDoses(prev => [...prev, doseKey]);
+  //             }
+  //           }
+  //         );
+  //         setAlertedDoses(prev => [...prev, doseKey]);
+  //       }
+  //     }
+
+  //     return () => { };
+  //   }, [medications, alertedDoses])
+  // );
 
   const calculateTotalDoses = (meds: Medication[]) => {
     if (!globalNotifications) return 0;
@@ -163,6 +182,7 @@ export default function HomeScreen({ user: propUser }: Props) {
               />
             </View>
 
+            {/* closest RReminder */}
             <View style={styles.closestReminder}>
               <ClosestMedicine />
             </View>
