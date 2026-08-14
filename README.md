@@ -1,5 +1,20 @@
 ## Project Structure
 
+MediTrack : Medication Tracker Offline and Online Based Applications (ProtoType)
+
+---------------------------------------------------------------- 
+
+Stack and Tools for Prototype: 
+- React Native/Expo (TypeScript)
+- Firebase (Online Sync & Authorizations)
+- AsyncStorage Expo (Offline Storage)
+- Notifications Expo (Offline Notifications)
+
+External Web (https://github.com/DelaMaharan1/medicine-reset-pass)  for Password Reset:
+- Custom Next.js Page (Password Reset)
+- Vercel (Deployment) (Password Reset Page)
+- Firebase Authorization (Password Reset) (Backend)
+
 This project follows a modular structure located in the `src/` directory:
 
 - `src/app/`: Expo Router pages and layouts.
