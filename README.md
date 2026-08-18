@@ -1,8 +1,12 @@
+## MediTrack : Medication Tracker Offline and Online Based Applications (ProtoType)
+
+![MediTrack-cover](assets/Apps-porto.png)
+
+----------------------------------------------------------------
+
 ## Project Structure
 
-MediTrack : Medication Tracker Offline and Online Based Applications (ProtoType)
-
----------------------------------------------------------------- 
+![Project-Erd](assets/project-erd.png)
 
 Stack and Tools for Prototype: 
 - React Native/Expo (TypeScript)
@@ -12,35 +16,20 @@ Stack and Tools for Prototype:
 
 External Web (https://github.com/DelaMaharan1/medicine-reset-pass)  for Password Reset:
 - Custom Next.js Page (Password Reset)
-- Vercel (Deployment) (Password Reset Page)
-- Firebase Authorization (Password Reset) (Backend)
+- Vercel (Deployment)
+- Firebase Authorization (Backend)
 
-This project follows a modular structure located in the `src/` directory:
+This project follows a modular structure located in this directory:
 
-- `src/app/`: Expo Router pages and layouts.
-- `src/features/`: Feature-specific logic and components (Auth, Medication, Progress, etc.).
-- `src/components/common/`: Shared/Reusable UI components.
-- `src/services/`: External services (Firebase, AsyncStorage, Notifications).
-- `src/context/`: Global state management.
-- `src/hooks/`: Shared React hooks.
-- `src/types/`: Global TypeScript definitions.
-- `src/utils/`: Pure utility functions.
-- `src/constants/`: App-wide constants and theme configuration.
-
-## Testing
-
-We use [Jest](https://jestjs.io/) and [React Native Testing Library](https://callstack.github.io/react-native-testing-library/) for testing.
-
-### Running Tests
-
-```bash
-npm test
-```
-
-### Writing Tests
-
-- Unit tests: Place in `__tests__` folders next to the implementation or use `.test.ts` suffix.
-- Component tests: Use `@testing-library/react-native` to render and interact with components.
+- `assets/`: Static assets such as images, fonts, and icons.
+- `scripts/`: Custom build and maintenance automation scripts.
+- `src/app/`: Expo Router file-based pages and layout management.
+- `src/components/`: Reusable UI components and feature-specific views.
+- `src/constants/`: Feature-wide constants, dropdown options (e.g., duration, frequency), and theme settings.
+- `src/context/`: Global state management using React Context API (Medicine, Theme, Snackbar).
+- `src/hooks/`: Custom React hooks for business logic and form management.
+- `src/types/`: Global TypeScript type definitions and interfaces.
+- `src/utils/`: Helper functions, validation routines, data backup, and Firebase configurations.
 
 ## Get started
 
@@ -58,3 +47,7 @@ npm test
 
 [... existing expo links ...]
 
+----------------------------------------------------------------
+## License & Copyright
+
+© 2026 **Dela Surya Maharani**. All Rights Reserved.
