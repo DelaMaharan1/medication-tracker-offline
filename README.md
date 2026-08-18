@@ -1,12 +1,12 @@
 ## MediTrack : Medication Tracker Offline and Online Based Applications (ProtoType)
 
-![MediTrack-cover](assets/Apps-porto.png)
+![MediTrack-cover](assets/diagrams/Apps-porto.png)
 
 ----------------------------------------------------------------
 
 ## Project Structure
 
-![Project-Erd](assets/project-erd.png)
+![Project-Erd](assets/diagrams/project-erd.png)
 
 Stack and Tools for Prototype: 
 - React Native/Expo (TypeScript)
